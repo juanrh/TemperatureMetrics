@@ -4,6 +4,8 @@
 
 - [rusoto](https://github.com/rusoto/rusoto)
 - [tokio](https://tokio.rs/tokio/tutorial)
+- CDK
+  - [CDK Developer Guide](https://docs.aws.amazon.com/cdk/latest/guide/home.html)
 
 ## Design
 
