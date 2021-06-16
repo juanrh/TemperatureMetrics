@@ -21,13 +21,26 @@ Open this directory as the root in VsCode, and check the Meson tab, and meson Vs
 # Usin "meson builddir" instead of "meson build" to use directory `builddir` as target
 # which is what the VsCode extension is using
 # Same as VsCode task "Meson: Configure"
-meson builddir
+# "setup" is the default goal in meson, so this is the same as `meson builddir`
+meson setup builddir
 
 # Build: same as "MEeson_ Build" VsCode task
 cd builddir
+# Compile: this leaves the binary in the root of this directory
 #   use `ninja` for meson <= 0.55.0
 meson compile
 
 # Run tests
 meson test
+
+# If we change the build definition in meson.build then run this to
+# regenerate
+meson --reconfigure builddir
+
+# Use a separate build directory for a release build
+# See build types in https://mesonbuild.com/Builtin-options.html
+cd ..
+meson setup release --buildtype release
+cd release
+meson compile
 ```
