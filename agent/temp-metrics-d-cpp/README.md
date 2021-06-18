@@ -44,3 +44,79 @@ meson setup release --buildtype release
 cd release
 meson compile
 ```
+
+## Cross compilation
+
+We are using a RPI 3B+ that use architecture armv7l
+
+Basic options are either using crosstool-NG to build our own toolchain, using Yocto or Buildroot to build the toolchain for us, or using a prebuilt toolchain, as described in "Finding a toolchain" from [this book](https://www.packtpub.com/product/mastering-embedded-linux-programming-third-edition/9781789530384). Let's use a prebuilt toolchain, as this is quite a common architecture. We'll also use glibc for the C library, let's see what we have installed in the RPI:
+
+```bash
+pi@temperature:~ $ gcc --version
+gcc (Raspbian 8.3.0-6+rpi1) 8.3.0
+pi@temperature:~ $ ld -v
+GNU ld (GNU Binutils for Raspbian) 2.31.1
+pi@temperature:~ $ ldd --version
+ldd (Debian GLIBC 2.28-10+rpi1) 2.28
+```
+
+Following [Building GCC as a cross compiler for Raspberry Pi](https://solarianprogrammer.com/2018/05/06/building-gcc-cross-compiler-raspberry-pi/) we ensure we use the same glibc version in the cross compile as the one used in the RPI  
+
+
+```bash
+mkdir gcc_all && cd gcc_all
+
+# We'll build Glibc for the RPI toolchain sysroot using GCC 8.3.0 as that is the same 
+# version in the RPI, to avoid errors
+# Then we'll use the latest GCC 10.1 to actually cross compile, linking to that glibc
+wget https://ftpmirror.gnu.org/binutils/binutils-2.31.tar.bz2
+wget https://ftpmirror.gnu.org/glibc/glibc-2.28.tar.bz2
+wget https://ftpmirror.gnu.org/gcc/gcc-8.3.0/gcc-8.3.0.tar.gz
+wget https://ftpmirror.gnu.org/gcc/gcc-10.1.0/gcc-10.1.0.tar.gz
+git clone --depth=1 https://github.com/raspberrypi/linux
+
+tar xf binutils-2.31.tar.bz2
+tar xf glibc-2.28.tar.bz2
+tar xf gcc-8.3.0.tar.gz
+tar xf gcc-10.1.0.tar.gz
+rm *.tar.*
+
+# GCC prerequisites
+for path in $(ls | grep gcc)
+do
+    pushd $path
+    contrib/download_prerequisites
+    rm *.tar.*
+    popd
+done
+
+# Create target directory for the cross compiler, and add it to the PATH
+sudo mkdir -p /opt/cross-pi-gcc
+sudo chown $USER /opt/cross-pi-gcc
+echo 'export PATH=/opt/cross-pi-gcc/bin:$PATH' >> ~/.bashrc
+source ~/.bashrc
+
+# Copy kernel headers
+pushd linux
+KERNEL=kernel7
+make ARCH=arm INSTALL_HDR_PATH=/opt/cross-pi-gcc/arm-linux-gnueabihf headers_install
+popd
+
+# Build binutils
+mkdir build-binutils && pushd build-binutils
+## NOTE: I use armv7l here
+../binutils-2.31/configure --prefix=/opt/cross-pi-gcc --target=arm-linux-gnueabihf --with-arch=armv7l --with-fpu=vfp --with-float=hard --disable-multilib
+make -j 8
+make install
+popd
+
+...
+```
+
+This is overly complex, as it still builds the toolchain from scratch.
+
+TODO check https://visp-doc.inria.fr/doxygen/visp-daily/tutorial-install-crosscompiling-raspberry.html that seems simpler because is uses the existing toolchain
+
+https://lindevs.com/cross-compile-simple-cpp-program-for-raspberry-pi-on-ubuntu/ it's too simple and I don't think would work with minimally complex programs
+
+Also consider pivot to py agent y Qt client for the UI
