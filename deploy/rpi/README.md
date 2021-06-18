@@ -32,10 +32,50 @@ TODO as local wifi access is enough for now
 
 ## GrovePi+ setup
 
+Following the README from https://github.com/DexterInd/GrovePi, with some additions. __From the RPI__:
+
+```bash
+curl -kL dexterindustries.com/update_grovepi | bash
+
+# To update the firmware in the future 
+cd /home/pi/Dexter/GrovePi/Firmware
+bash firmware_update.sh
+```
+
+Now to test this works, connect the temperature and humidity sensor to port D7. Then use the following modification of the [temperature sensor demo](https://github.com/DexterInd/GrovePi/blob/master/Projects/Home_Weather_Display/Home_Weather_Display.py) from a Python shell. Note the installation above installed the grove pi python libraries system wide, at least for the default Python 2.7:
+
+```python
+from grovepi import *
+import time
+
+dht_sensor_port = 7 # connect the DHt sensor to port 7
+dht_sensor_type = 0 # use 0 for the blue-colored sensor and 1 for the white-colored sensor
+
+def measure_n_times(n, sleep_time=1):
+    for _ in xrange(n):
+        (temp, hum) = dht(dht_sensor_port,dht_sensor_type)
+        print("temperature={temp}, humidity={hum}".format(temp=temp, hum=hum))
+        time.sleep(sleep_time)
+
+measure_n_times(4)
+```
+
+This often returns NaN when you measure too fast
+
+```python 
+>>> measure_n_times(4, sleep_time=0.5)
+temperature=27.0, humidity=48.0
+temperature=nan, humidity=nan
+temperature=26.0, humidity=48.0
+temperature=nan, humidity=nan
+>>> measure_n_times(4, sleep_time=1)
+temperature=26.0, humidity=48.0
+temperature=26.0, humidity=48.0
+temperature=26.0, humidity=48.0
+temperature=26.0, humidity=48.0
+>>> 
+```
+
 TODO:
 
-- Install Grove drivers on raspbian https://github.com/DexterInd/GrovePi
-- Install Grove client libraries
-- Check it works ok: hello world with led https://www.dexterindustries.com/GrovePi/projects-for-the-raspberry-pi/
-- Wrap C client from Rust in LED hello world
-- Access temperature mesaurements from Rust
+- Install Grove client C++ libraries, and access temperature and humidity measurements from C++
