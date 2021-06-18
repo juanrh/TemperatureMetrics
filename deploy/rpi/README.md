@@ -21,6 +21,32 @@ To setup networking:
 
       Now we can login with `ssh temperature`. Now disable ssh with password editing `/etc/ssh/sshd_config` to have `PasswordAuthentication no` and restarting the daemon with `sudo systemctl restart ssh` 
 
+Using the following RPI machine:
+
+```bash
+pi@temperature:~ $ uname -a
+Linux temperature.local 5.4.79-v7+ #1373 SMP Mon Nov 23 13:22:33 GMT 2020 armv7l GNU/Linux
+pi@temperature:~ $ arch
+armv7l
+pi@temperature:~ $ lscpu 
+Architecture:        armv7l
+Byte Order:          Little Endian
+CPU(s):              4
+On-line CPU(s) list: 0-3
+Thread(s) per core:  1
+Core(s) per socket:  4
+Socket(s):           1
+Vendor ID:           ARM
+Model:               4
+Model name:          Cortex-A53
+Stepping:            r0p4
+CPU max MHz:         1400,0000
+CPU min MHz:         600,0000
+BogoMIPS:            51.20
+Flags:               half thumb fastmult vfp edsp neon vfpv3 tls vfpv4 idiva idivt vfpd32 lpae evtstrm crc32
+pi@temperature:~ $
+```
+
 ### USB serial access
 
 Using a JBTek USB TTL cable, and following [these instructions](https://www.adafruit.com/product/954) and [this tutorial](https://learn.adafruit.com/adafruits-raspberry-pi-lesson-5-using-a-console-cable). Steps:
