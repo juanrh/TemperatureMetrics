@@ -50,5 +50,4 @@ python setup.py test
 
 TODO: 
 
-- release script and VsCode task to run tests, and mypy and pylint too
-- deploy script and VsCode task to deploy to RPI: arg for IP with default to my mDNS
+- deploy script and VsCode task to deploy to RPI with arg for IP with default to my mDNS. Package as egg and transfer with SCP, and restart the agent, use fabric for that. 

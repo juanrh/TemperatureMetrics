@@ -16,7 +16,7 @@ setup(name='tempd',
       license='Apache 2.0',
       packages=['tempd'],
       install_requires = [
-        'mypy', 'typing_extensions'
+        'mypy', 'typing_extensions', 'pylint'
       ],
       test_suite='nose.collector',
       tests_require=['nose'],
