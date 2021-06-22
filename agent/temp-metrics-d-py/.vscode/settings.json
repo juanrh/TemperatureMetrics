@@ -1,0 +1,6 @@
+{
+    "python.pythonPath": ".venv/bin/python",
+    "mypy.dmypyExecutable": "${workspaceFolder}/.venv/bin/dmypy",
+    // for some reason ${workspaceFolder} doesn't expand right here
+    "mypy.configFile": "ci/mypy.ini"
+}

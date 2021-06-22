@@ -1,0 +1,28 @@
+{
+    // See https://go.microsoft.com/fwlink/?LinkId=733558
+    // for the documentation about the tasks.json format
+    "version": "2.0.0",
+    "tasks": [
+      {
+        "label": "run",
+        "type": "shell",
+        // https://code.visualstudio.com/docs/editor/tasks#_variable-substitution
+        "command": "${config:python.pythonPath} ${workspaceFolder}/main.py",
+        "group": "test",
+        "presentation": {
+          "reveal": "always",
+          "panel": "shared"
+        }
+      },
+      {
+        "label": "release",
+        "type": "shell",
+        "command": "source ${workspaceFolder}/.venv/bin/activate && ${workspaceFolder}/ci/release.sh",
+        "group": "test",
+        "presentation": {
+          "reveal": "always",
+          "panel": "shared"
+        }
+      }, 
+    ]
+}
