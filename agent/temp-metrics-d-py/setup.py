@@ -19,7 +19,8 @@ setup(name='tempd',
       install_requires = [
         'pip', 'wheel', 'setuptools',
         'mypy>=0.910', 'typing_extensions>=3.10.0.0', 'pylint>=2.8.3',
-        'invoke>=1.5.0', 'fabric>=2.6.0'
+        'invoke>=1.5.0', 'fabric>=2.6.0', 
+        'Jinja2>=3.0.1'
       ],
       test_suite='nose.collector',
       tests_require=['nose'],

@@ -4,6 +4,10 @@
         "user": "",
         "sudo_pass": ""
     },
+    "deploy": {
+        "temp_agent_root": "/opt/temp_agent",
+        "service_name": "temp_metrics"
+    },
     "measurement": {
         "source_name": "",
         "frequency_in_seconds" : "5.0"

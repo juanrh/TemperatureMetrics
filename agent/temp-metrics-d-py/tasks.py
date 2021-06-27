@@ -14,6 +14,7 @@ import json
 
 from invoke import task
 from fabric import Config, Connection
+from jinja2 import Template
 from tempd.agent import Main
 
 _script_dir = os.path.dirname(__file__)
@@ -75,11 +76,27 @@ def connect_with_sudo(config):
     fabric_conf = Config(overrides={'sudo': {'password': sudo_pass}})
     return Connection(config['agent']['host'], config=fabric_conf)
 
+_service_file_template = Template('''
+[Unit]
+Description={{ service_name }}
+After=network.target
 
+[Service]
+ExecStart={{ launch_cmd }}
+WorkingDirectory={{ working_directory }}
+StandardOutput=inherit
+StandardError=inherit
+Restart=always
+User={{ user }}
+
+[Install]
+WantedBy=multi-user.target
+
+''')
 _virtualenv = 'tempAgent'
 _activate_virtualenv = os.path.join(_virtualenv, 'bin', 'activate')
 @task
-def deploy(c, conf, temp_agent_root='/opt/temp_agent'):
+def deploy(c, conf):
     """
     Deploy the agent to a host
 
@@ -90,6 +107,7 @@ def deploy(c, conf, temp_agent_root='/opt/temp_agent'):
         package_path = package(c)
     config = read_conf(conf)
     rc = connect_with_sudo(config)
+    temp_agent_root = config['deploy']['temp_agent_root']
 
     def copy_artifacts():
         # Do not delete the agent root so we can keep some state there. Note
@@ -114,8 +132,24 @@ def deploy(c, conf, temp_agent_root='/opt/temp_agent'):
         with rc.prefix(f". {_activate_virtualenv}"):
             rc.run(f"pip install {os.path.basename(package_path)}")
 
-    with print_title("Stopping agent"):
-        pass  # TODO, do not fail if not setup
+    def setup_systemd():
+        """https://www.raspberrypi.org/documentation/linux/usage/systemd.md"""
+        service_name=config['deploy']['service_name']
+        launch_cmd=f"/bin/bash -c 'source {_activate_virtualenv} && inv launch-agent --conf={conf}'"
+        service_file_contents = _service_file_template.render(
+            service_name=service_name,
+            launch_cmd=launch_cmd,
+            working_directory=temp_agent_root,
+            user=config['agent']['user']
+        )
+        local_systemd_conf = os.path.join(_script_dir, 'build', service_name)
+        with open(local_systemd_conf, 'w') as out_f:
+            out_f.write(service_file_contents)
+        rc.put(local_systemd_conf, temp_agent_root)
+        systemd_conf = f"/etc/systemd/system/{service_name}.service"
+        rc.sudo(f"cp {temp_agent_root}/{service_name} {systemd_conf}")
+        rc.sudo('systemctl daemon-reload')
+        rc.sudo(f"systemctl restart {service_name}.service")
 
     with print_title("Copying artifacts"):
         copy_artifacts()
@@ -127,22 +161,57 @@ def deploy(c, conf, temp_agent_root='/opt/temp_agent'):
             update_agent()
 
     with print_title("Running smoke test for deployment"):
-        smoke_test_deployment(c, conf, temp_agent_root)
+        smoke_test_deployment(c, conf)
 
-    with print_title("Start agent"):
-        pass  # TODO, setup systemd if needed
+    with print_title("(Re)Start agent"):
+        setup_systemd()
 
 @task
-def smoke_test_deployment(c, conf, temp_agent_root='/opt/temp_agent'): # pylint: disable=unused-argument
+def smoke_test_deployment(c, conf): # pylint: disable=unused-argument
     """
     Example:
         inv smoke-test-deployment --conf=conf/prod.json
     """
     config = read_conf(conf)
     rc = connect_with_sudo(config)
+    temp_agent_root = config['deploy']['temp_agent_root']
     with rc.prefix(f"cd {temp_agent_root}"):
         with rc.prefix(f". {_activate_virtualenv}"):
             rc.run("""python -c 'from tempd.agent import Dht11TempMeter; print(Dht11TempMeter("foo").measure())'""") # pylint: disable=line-too-long
+
+def get_service_name(config):
+    """Get the name of the systemctl service used for the agent"""
+    service_name=config['deploy']['service_name']
+    return f"{service_name}.service"
+
+@task
+def check_agent_status(c, conf):
+    """
+    Check status of the agent service
+
+    Example:
+        inv check-agent-status --conf=conf/prod.json
+    """
+    systemctl_agent(c, 'status', conf)
+
+
+@task
+def stop_agent(c, conf):
+    """
+    Stop the agent service
+
+    Example:
+        inv stop-agent --conf=conf/prod.json
+    """
+    systemctl_agent(c, 'stop', conf)
+    check_agent_status(c, conf)
+
+def systemctl_agent(c, command, conf): # pylint: disable=unused-argument
+    """Run a systemctl command on the agent service"""
+    config = read_conf(conf)
+    rc = connect_with_sudo(config)
+    service_name = get_service_name(config)
+    return rc.sudo(f"systemctl {command} {service_name}")
 
 @task
 def launch_agent(c, conf): # pylint: disable=unused-argument

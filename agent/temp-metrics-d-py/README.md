@@ -49,10 +49,8 @@ See VsCode tasks in `.vscode/tasks.json`, and invoke tasks with `inv -l`.
 
 ## TODO
 
-- make a deamon
-- config upstart
+- logging: owise we are blind
 - publish to cloudwtach
-- logging
 - add test coverage analysis
 - use async clients
 - For Cpp server influxdb or other time series DB would be optimal, but I want embedded. Rocksdb can also be used for time series, see https://itnext.io/storing-time-series-in-rocksdb-a-cookbook-e873fcb117e4 
