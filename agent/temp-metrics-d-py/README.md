@@ -41,13 +41,14 @@ Also
 
 - Install VsCode extensions: ms-python.python,matangover.mypy. Open the directory of this file as the VsCode root.
 
-### Usage
+### Development
 
-```bash
-# run tests
-python setup.py test
-```
+Create a production configuration from the template `conf/conf.template.json`
+
+See VsCode tasks in `.vscode/tasks.json`, and invoke tasks with `inv -l`.
 
 TODO: 
 
 - deploy script and VsCode task to deploy to RPI with arg for IP with default to my mDNS. Package as egg and transfer with SCP, and restart the agent, use fabric for that. 
+  - config upstart
+- logging

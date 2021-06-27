@@ -7,7 +7,7 @@
         "label": "run",
         "type": "shell",
         // https://code.visualstudio.com/docs/editor/tasks#_variable-substitution
-        "command": "${config:python.pythonPath} ${workspaceFolder}/main.py",
+        "command": "source ${workspaceFolder}/.venv/bin/activate && inv launch-agent --sourceName='comoda comedor'",
         "group": "test",
         "presentation": {
           "reveal": "always",
@@ -17,7 +17,7 @@
       {
         "label": "release",
         "type": "shell",
-        "command": "source ${workspaceFolder}/.venv/bin/activate && ${workspaceFolder}/ci/release.sh",
+        "command": "source ${workspaceFolder}/.venv/bin/activate && inv release",
         "group": "test",
         "presentation": {
           "reveal": "always",

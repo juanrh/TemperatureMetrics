@@ -14,9 +14,12 @@ setup(name='tempd',
       author='Juan Rodriguez Hortala',
       author_email='juan.rodriguez.hortala@gmail.com',
       license='Apache 2.0',
-      packages=['tempd'],
+      # skip packaging tests
+      packages=['tempd', 'tempd.sensors'],
       install_requires = [
-        'mypy', 'typing_extensions', 'pylint'
+        'pip', 'wheel', 'setuptools',
+        'mypy>=0.910', 'typing_extensions>=3.10.0.0', 'pylint>=2.8.3',
+        'invoke>=1.5.0', 'fabric>=2.6.0'
       ],
       test_suite='nose.collector',
       tests_require=['nose'],

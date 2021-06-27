@@ -1,0 +1,7 @@
+{
+    "agent" : {
+        "host" : "",
+        "user": "",
+        "sudo_pass": ""
+    }
+}
