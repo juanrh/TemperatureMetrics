@@ -3,5 +3,9 @@
         "host" : "",
         "user": "",
         "sudo_pass": ""
+    },
+    "measurement": {
+        "source_name": "",
+        "frequency_in_seconds" : "5.0"
     }
 }

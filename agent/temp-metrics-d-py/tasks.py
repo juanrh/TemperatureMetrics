@@ -14,7 +14,7 @@ import json
 
 from invoke import task
 from fabric import Config, Connection
-from tempd.agent import BlockingDaemon, Dht11TempMeter
+from tempd.agent import Main
 
 _script_dir = os.path.dirname(__file__)
 
@@ -142,14 +142,14 @@ def smoke_test_deployment(c, conf, temp_agent_root='/opt/temp_agent'): # pylint:
             rc.run("""python -c 'from tempd.agent import Dht11TempMeter; print(Dht11TempMeter("foo").measure())'""") # pylint: disable=line-too-long
 
 @task
-def launch_agent(c, sourceName): # pylint: disable=unused-argument
+def launch_agent(c, conf): # pylint: disable=unused-argument
     """Launch agent and block while it measures. Use Control+C to stop
     the program
 
     Example:
-        inv launch-agent --sourceName='comedor'
+        inv launch-agent --conf=conf/prod.json
     """
-    meter = Dht11TempMeter(sourceName)
-    deamon = BlockingDaemon(5, lambda: print(f"Measurement: {meter.measure()}"))
+    main = Main(read_conf(conf))
+    deamon = main.create_deamon()
     deamon.start()
     print("that's all")

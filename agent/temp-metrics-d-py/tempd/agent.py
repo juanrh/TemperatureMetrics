@@ -34,13 +34,12 @@ class TempMeter(Protocol): # pylint: disable=too-few-public-methods
         """Get a new measurement from the sensor"""
         ...
 
-
 class BlockingDaemon:
     """
     A deamon that runs an action on a scheduled periodicity,
     blocking the main thread
     """
-    def __init__(self, seconds: int, action: Callable[[], None]):
+    def __init__(self, seconds: float, action: Callable[[], None]):
         """Schedule the process to run each `seconds` seconds"""
         self.__seconds = seconds
         self.__action = action
@@ -96,3 +95,25 @@ class Dht11TempMeter(TempMeter): # pylint: disable=too-few-public-methods
         return TempMeasurement(self.__source_name,
                                Dht11TempMeter.__get_current_timestamp(),
                                temperature, humidity)
+
+class Main: # pylint: disable=too-few-public-methods
+    """Analogous to a Guice module, this just builds
+    a deamon that performs the measurement
+    """
+    def __init__(self, config: dict):
+        """
+        Params:: dict[str, str]
+        - config: a dictionary of keys corresponding to
+          the JSON configuration documented in the readme
+        """
+        self.__config = config
+
+    def create_deamon(self) -> BlockingDaemon:
+        """Factory for the daemon object"""
+        measurement_conf = self.__config['measurement']
+        meter = Dht11TempMeter(measurement_conf['source_name'])
+        deamon = BlockingDaemon(
+            float(measurement_conf['frequency_in_seconds']),
+            lambda: print(f"Measurement: {meter.measure()}")
+        )
+        return deamon
