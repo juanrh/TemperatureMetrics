@@ -99,6 +99,9 @@ def deploy(c, conf, temp_agent_root='/opt/temp_agent'):
         rc.put(package_path, temp_agent_root)
         tasks_path = glob.glob(os.path.join(_script_dir, 'tasks.py'))[0]
         rc.put(tasks_path, temp_agent_root)
+        temp_agent_conf_root = f"{temp_agent_root}/conf"
+        rc.run(f"mkdir -p {temp_agent_conf_root}")
+        rc.put(conf, temp_agent_conf_root)
 
     def setup_virtual_env():
         rc.run('pip3 install virtualenv')
