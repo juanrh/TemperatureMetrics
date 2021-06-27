@@ -14,7 +14,7 @@ import json
 
 from invoke import task
 from fabric import Config, Connection
-from tempd.agent import Dht11TempMeter
+from tempd.agent import BlockingDaemon, Dht11TempMeter
 
 _script_dir = os.path.dirname(__file__)
 
@@ -97,6 +97,8 @@ def deploy(c, conf, temp_agent_root='/opt/temp_agent'):
         rc.sudo(f'mkdir -p {temp_agent_root}')
         rc.sudo(f"chown -R {config['agent']['user']} {temp_agent_root}")
         rc.put(package_path, temp_agent_root)
+        tasks_path = glob.glob(os.path.join(_script_dir, 'tasks.py'))[0]
+        rc.put(tasks_path, temp_agent_root)
 
     def setup_virtual_env():
         rc.run('pip3 install virtualenv')
@@ -141,10 +143,13 @@ def smoke_test_deployment(c, conf, temp_agent_root='/opt/temp_agent'): # pylint:
 
 @task
 def launch_agent(c, sourceName): # pylint: disable=unused-argument
-    """Agent's entry point
+    """Launch agent and block while it measures. Use Control+C to stop
+    the program
 
     Example:
-        inv launch-agent --sourceName='comoda comedor'
+        inv launch-agent --sourceName='comedor'
     """
     meter = Dht11TempMeter(sourceName)
-    print(f"Measurement: {meter.measure()}")
+    deamon = BlockingDaemon(5, lambda: print(f"Measurement: {meter.measure()}"))
+    deamon.start()
+    print("that's all")

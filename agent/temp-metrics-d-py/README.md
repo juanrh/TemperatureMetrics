@@ -47,8 +47,12 @@ Create a production configuration from the template `conf/conf.template.json`
 
 See VsCode tasks in `.vscode/tasks.json`, and invoke tasks with `inv -l`.
 
-TODO: 
+## TODO
 
-- deploy script and VsCode task to deploy to RPI with arg for IP with default to my mDNS. Package as egg and transfer with SCP, and restart the agent, use fabric for that. 
-  - config upstart
+- make a deamon
+- config upstart
+- publish to cloudwtach
 - logging
+- add test coverage analysis
+- use async clients
+- For Cpp server influxdb or other time series DB would be optimal, but I want embedded. Rocksdb can also be used for time series, see https://itnext.io/storing-time-series-in-rocksdb-a-cookbook-e873fcb117e4 
