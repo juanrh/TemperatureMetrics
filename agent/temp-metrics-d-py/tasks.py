@@ -5,6 +5,8 @@ NOT following https://python-packaging.readthedocs.io/en/latest/command-line-scr
 but this is not a package utils script, but an entry point
 for deployment
 """
+# pylint: disable=invalid-name
+
 import os
 from contextlib import contextmanager
 import glob
@@ -17,13 +19,15 @@ from tempd.agent import Dht11TempMeter
 _script_dir = os.path.dirname(__file__)
 
 def read_conf(path):
+    """Read a configuration file"""
     with open(path, 'r') as in_f:
         return json.load(in_f)
 
 @contextmanager
 def print_title(message):
     """
-    Print a message with a underline chars, so it is more visible, and then print some empty lines when leaving this context.
+    Print a message with a underline chars, so it is more visible, and
+    then print some empty lines when leaving this context.
     """
     print(f"{message}")
     print('='*30)
@@ -40,7 +44,7 @@ def test(c):
             c.run("python setup.py test")
 
 @task
-def release(c):    
+def release(c):
     """Run all tests and all code analysis tools"""
     with c.cd(_script_dir):
         test(c)
@@ -52,7 +56,7 @@ def release(c):
 @task
 def package(c):
     """
-    Package the code as wheel (python eggs are deprecated).   
+    Package the code as wheel (python eggs are deprecated).
     Install resulting package with `pip install dist/tempd-0.1-py3-none-any.whl`
     """
     with c.cd(_script_dir):
@@ -79,7 +83,7 @@ def deploy(c, conf, temp_agent_root='/opt/temp_agent'):
     """
     Deploy the agent to a host
 
-    Example: 
+    Example:
         inv deploy --conf=conf/prod.json
     """
     with print_title("Packaging"):
@@ -93,18 +97,18 @@ def deploy(c, conf, temp_agent_root='/opt/temp_agent'):
         rc.sudo(f'mkdir -p {temp_agent_root}')
         rc.sudo(f"chown -R {config['agent']['user']} {temp_agent_root}")
         rc.put(package_path, temp_agent_root)
-    
+
     def setup_virtual_env():
         rc.run('pip3 install virtualenv')
         rc.run(f"rm -rf {_virtualenv}")
         # NOTE: using `--system-site-packages` to inherit the grovepi library
         # installed system wide
         rc.run(f"python3 -m virtualenv --system-site-packages {_virtualenv}")
-        
+
     def update_agent():
         with rc.prefix(f". {_activate_virtualenv}"):
             rc.run(f"pip install {os.path.basename(package_path)}")
-    
+
     with print_title("Stopping agent"):
         pass  # TODO, do not fail if not setup
 
@@ -124,7 +128,7 @@ def deploy(c, conf, temp_agent_root='/opt/temp_agent'):
         pass  # TODO, setup systemd if needed
 
 @task
-def smoke_test_deployment(c, conf, temp_agent_root='/opt/temp_agent'):
+def smoke_test_deployment(c, conf, temp_agent_root='/opt/temp_agent'): # pylint: disable=unused-argument
     """
     Example:
         inv smoke-test-deployment --conf=conf/prod.json
@@ -133,15 +137,14 @@ def smoke_test_deployment(c, conf, temp_agent_root='/opt/temp_agent'):
     rc = connect_with_sudo(config)
     with rc.prefix(f"cd {temp_agent_root}"):
         with rc.prefix(f". {_activate_virtualenv}"):
-            rc.run("""python -c 'from tempd.agent import Dht11TempMeter; print(Dht11TempMeter("foo").measure())'""")
+            rc.run("""python -c 'from tempd.agent import Dht11TempMeter; print(Dht11TempMeter("foo").measure())'""") # pylint: disable=line-too-long
 
 @task
-def launch_agent(c, sourceName):
+def launch_agent(c, sourceName): # pylint: disable=unused-argument
     """Agent's entry point
 
-    Example: 
+    Example:
         inv launch-agent --sourceName='comoda comedor'
     """
     meter = Dht11TempMeter(sourceName)
-    # FIXME: use upstart instead
     print(f"Measurement: {meter.measure()}")

@@ -7,7 +7,7 @@ so a stub `measure()` function is defined for other platforms
 References:
 
 - https://wiki.seeedstudio.com/Grove-TemperatureAndHumidity_Sensor/
-- https://raspberrypi.stackexchange.com/questions/47230/how-to-get-the-accurate-temperature-readings-from-dht11-sensor-on-grovepi
+- https://raspberrypi.stackexchange.com/questions/47230/how-to-get-the-accurate-temperature-readings-from-dht11-sensor-on-grovepi # pylint: disable=line-too-long
 """
 
 import time
@@ -22,8 +22,8 @@ try:
         """Get a measurement fom the DHT11 sensor"""
         # https://mypy.readthedocs.io/en/stable/casts.html#casts
         return cast(Dht11Measurement, dht(sensor_port, sensor_type))
-except ModuleNotFoundError as e:
-    print(f"WARNING: No measure driver found, fake measures will be returned: {e}")
+except ModuleNotFoundError as mnfe:
+    print(f"WARNING: No measure driver found, fake measures will be returned: {mnfe}")
     def measure(sensor_port: int, sensor_type: int) -> Dht11Measurement: # pylint: disable=unused-argument
         """The grovepi library is not available for this platform, so just
            return a stub reading"""
