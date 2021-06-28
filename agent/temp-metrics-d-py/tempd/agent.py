@@ -5,6 +5,7 @@ Temperature metrics agent
 import time
 import math
 import signal
+import logging
 from dataclasses import dataclass
 from typing import Callable
 from typing_extensions import Protocol
@@ -90,11 +91,14 @@ class Dht11TempMeter(TempMeter): # pylint: disable=too-few-public-methods
     def measure(self) -> "TempMeasurement":
         (temperature, humidity) = self.__sensor()
         while math.isnan(temperature) or math.isnan(humidity):
+            logging.debug("Retrying measurement")
             time.sleep(self.__retry_sleep_time)
             (temperature, humidity) = self.__sensor()
-        return TempMeasurement(self.__source_name,
+        measurement = TempMeasurement(self.__source_name,
                                Dht11TempMeter.__get_current_timestamp(),
                                temperature, humidity)
+        logging.info('Measured %s', measurement)
+        return measurement
 
 class Main: # pylint: disable=too-few-public-methods
     """Analogous to a Guice module, this just builds
@@ -112,8 +116,10 @@ class Main: # pylint: disable=too-few-public-methods
         """Factory for the daemon object"""
         measurement_conf = self.__config['measurement']
         meter = Dht11TempMeter(measurement_conf['source_name'])
+        def action():
+            meter.measure()
         deamon = BlockingDaemon(
             float(measurement_conf['frequency_in_seconds']),
-            lambda: print(f"Measurement: {meter.measure()}")
+            action
         )
         return deamon

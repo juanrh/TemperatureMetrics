@@ -49,7 +49,6 @@ See VsCode tasks in `.vscode/tasks.json`, and invoke tasks with `inv -l`.
 
 ## TODO
 
-- logging: owise we are blind
 - publish to cloudwtach
 - add test coverage analysis
 - use async clients

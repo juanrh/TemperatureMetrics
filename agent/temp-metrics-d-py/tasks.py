@@ -11,6 +11,8 @@ import os
 from contextlib import contextmanager
 import glob
 import json
+import logging
+import logging.handlers
 
 from invoke import task
 from fabric import Config, Connection
@@ -213,6 +215,38 @@ def systemctl_agent(c, command, conf): # pylint: disable=unused-argument
     service_name = get_service_name(config)
     return rc.sudo(f"systemctl {command} {service_name}")
 
+def setup_logging(c, config, root_path=None):
+    """
+    Setup logging
+
+    Params:
+    - config: a configuration dictionary
+    - root_path: path for the root directory or None.
+    If not None logs will be stored in a "log" subdirectory
+    of `root_path`
+    """
+    loggging_conf = config['deploy']['logging']
+    logger = logging.getLogger()
+    logger.setLevel(loggging_conf['level'])
+    formatter = logging.Formatter('%(asctime)s [%(process)d]: %(message)s')
+    stdoutHandler = logging.StreamHandler()
+    stdoutHandler.setFormatter(formatter)
+    stdoutHandler.setLevel(loggging_conf['level'])
+    logger.addHandler(stdoutHandler)
+    if root_path is not None:
+        logging_root = os.path.join(root_path, 'log')
+        c.run(f"mkdir -p {logging_root}")
+        service_name=config['deploy']['service_name']
+        log_filename = os.path.join(logging_root, f"{service_name}.log")
+        rotating_handler = logging.handlers.TimedRotatingFileHandler(
+            log_filename,
+            when=loggging_conf['rotationIntervalUnit'],
+            interval=loggging_conf['rotationInterval'],
+            backupCount=loggging_conf['maxLogFiles']
+        )
+        rotating_handler.setLevel(loggging_conf['level'])
+        logger.addHandler(rotating_handler)
+
 @task
 def launch_agent(c, conf): # pylint: disable=unused-argument
     """Launch agent and block while it measures. Use Control+C to stop
@@ -221,7 +255,10 @@ def launch_agent(c, conf): # pylint: disable=unused-argument
     Example:
         inv launch-agent --conf=conf/prod.json
     """
-    main = Main(read_conf(conf))
+    config = read_conf(conf)
+    root_path = os.path.dirname(os.path.dirname(conf))
+    setup_logging(c, config, root_path)
+    main = Main(config)
     deamon = main.create_deamon()
     deamon.start()
     print("that's all")
