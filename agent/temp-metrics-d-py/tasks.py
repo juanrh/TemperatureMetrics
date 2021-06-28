@@ -229,10 +229,12 @@ def setup_logging(c, config, root_path=None):
     logger = logging.getLogger()
     logger.setLevel(loggging_conf['level'])
     formatter = logging.Formatter('%(asctime)s [%(process)d]: %(message)s')
+    def setup_handler(handler):
+        handler.setFormatter(formatter)
+        handler.setLevel(loggging_conf['level'])
+        logger.addHandler(handler)
     stdoutHandler = logging.StreamHandler()
-    stdoutHandler.setFormatter(formatter)
-    stdoutHandler.setLevel(loggging_conf['level'])
-    logger.addHandler(stdoutHandler)
+    setup_handler(stdoutHandler)
     if root_path is not None:
         logging_root = os.path.join(root_path, 'log')
         c.run(f"mkdir -p {logging_root}")
@@ -244,8 +246,7 @@ def setup_logging(c, config, root_path=None):
             interval=loggging_conf['rotationInterval'],
             backupCount=loggging_conf['maxLogFiles']
         )
-        rotating_handler.setLevel(loggging_conf['level'])
-        logger.addHandler(rotating_handler)
+        setup_handler(rotating_handler)
 
 @task
 def launch_agent(c, conf): # pylint: disable=unused-argument
