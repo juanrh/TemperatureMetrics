@@ -6,9 +6,13 @@ import time
 import math
 import signal
 import logging
+import os
+import json
+import threading
 from dataclasses import dataclass
-from typing import Callable
+from typing import Callable, Optional
 from typing_extensions import Protocol
+import boto3
 
 from .sensors.types import Dht11Sensor
 from .sensors import dht11
@@ -29,39 +33,98 @@ class TempMeasurement:
 class TempMeter(Protocol): # pylint: disable=too-few-public-methods
     """A temperature meter is able to get temperature measurements
 
-    TODO: Only valid measurements should be returned, e.g. discard NaN returned by the
+    Only valid measurements should be returned, e.g. discard NaN returned by the
     driver and retry until a valid measurement is obtained"""
     def measure(self) -> "TempMeasurement":
         """Get a new measurement from the sensor"""
         ...
 
-class BlockingDaemon:
+
+class MeasurementRecorder(Protocol): # pylint: disable=too-few-public-methods
+    """A measurement recorder is able to record measurements in some
+    permanent storage"""
+    def record(self, measurement: "TempMeasurement"):
+        """Records a measurement in some permanent storage"""
+        ...
+
+class Timer(Protocol):
+    """A timer. This is required because patching time.time() doesn't work
+    because it is called outside this code"""
+    def sleep(self, sleep_time:float):
+        """Block this thread for a number of milliseconds"""
+        ...
+
+    def time(self) -> float:
+        """Give the current epoch time in milliseconds"""
+        ...
+
+class TimeTimer(Timer):
+    """Timer based on time module"""
+    def sleep(self, sleep_time):
+        time.sleep(sleep_time)
+
+    def time(self):
+        return time.time()
+
+class ThreadDaemon:
     """
     A deamon that runs an action on a scheduled periodicity,
-    blocking the main thread
+    running on its own thread
     """
-    def __init__(self, seconds: float, action: Callable[[], None]):
+    def __init__(self, seconds: float, 
+                       action: Callable[[], None], 
+                       timer: Timer = TimeTimer()):
         """Schedule the process to run each `seconds` seconds"""
         self.__seconds = seconds
         self.__action = action
+        self.__timer = timer
         self.__running = False
+        self.__thread: Optional[threading.Thread] = None
 
-    def start(self):
-        """Launch the daemon"""
+    @property
+    def running(self) -> bool:
+        """Whether this deamon is running or not"""
+        return self.__thread.is_alive() if self.__thread is not None\
+               else False
+
+
+    __polling_interval = 0.1
+    def start(self, blocking:bool=False):
+        """Launch the daemon
+
+        If blocking is true the current thread blocks
+        to join this deamon's thread
+        """
         signal.signal(signal.SIGINT, lambda _signal, _stack: self.stop())
-        latest_exec_time = 0
         self.__running = True
-        while self.__running:
-            current_time = time.time()
-            if current_time - latest_exec_time > self.__seconds:
-                self.__action()
-                latest_exec_time = current_time
-            time.sleep(0.1)
+        def thread_function():
+            logging.info("Starting deamon")
+            latest_exec_time = 0
+            while self.__running:
+                current_time = self.__timer.time()
+                print(f"current_time : {current_time}") # FIXME
+                print(f"self.__seconds: {self.__seconds}")
+                print(f"latest_exec_time {latest_exec_time}")
+                if current_time - latest_exec_time > self.__seconds:
+                    self.__action()
+                    latest_exec_time = current_time
+                self.__timer.sleep(ThreadDaemon.__polling_interval)
+        self.__thread = threading.Thread(target=thread_function, daemon=True)
+        self.__thread.start()
+        if blocking:
+            self.__thread.join()
+
 
     def stop(self):
         """Stop the deamon"""
-        print("INFO: stopping the deamon")
+        logging.info("Stopping deamon")
         self.__running = False
+
+    def wait_for_completion(self, timeout: float):
+        """Block waiting for the daemon to stop"""
+        if self.__thread is not None:
+            self.__thread.join(timeout)
+
 
 class Dht11TempMeter(TempMeter): # pylint: disable=too-few-public-methods
     """A temperature meter based on the DHT11 sensor
@@ -100,6 +163,67 @@ class Dht11TempMeter(TempMeter): # pylint: disable=too-few-public-methods
         logging.info('Measured %s', measurement)
         return measurement
 
+
+class CloudwatchMeasurementRecorder(MeasurementRecorder): # pylint: disable=too-few-public-methods
+    """A MeasurementRecorder that stores the measurements
+    as AWS Cloudwatch metrics. 2 metrics are emitted per
+    measurement, one for temperature and one for humidity
+
+    Attributes:
+
+    - source_dimension: name of the cloudwatch dimension used to
+      specify the metrics source
+    - temperature_metric_name: name of the cloudwatch metrics used to
+      for temperature metrics
+    - humidity_metric_name: name of the cloudwatch metrics used to
+      for humidity metrics
+    """
+    source_dimension = 'source'
+    temperature_metric_name = 'temperature'
+    humidity_metric_name = 'humidity'
+
+    def __init__(self, session: "boto3.session.Session",
+                 namespace:str='temp_agent',
+                 # Union[Literal[1], Literal[60]] would be better,
+                 # but it's only available in Python 3.8+
+                 storage_resolution:int=60):
+        """
+        These arguments match with parameters used put a
+        metric into CloudWatch metrics, see https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/publishingMetrics.html#high-resolution-metrics # pylint: disable=line-too-long
+        for more details.
+        """
+        self.__metrics_namespace = namespace
+        self.__storage_resolution = storage_resolution
+        self.__cloudwatch = session.client('cloudwatch')
+
+    def record(self, measurement: "TempMeasurement"):
+        def create_metric(metric_name, value):
+            return {
+                'MetricName': metric_name,
+                'Dimensions': [
+                    {
+                        'Name': self.__class__.source_dimension,
+                        'Value': measurement.source
+                    },
+                ],
+                'Timestamp': measurement.timestamp,
+                'Value': value,
+                'StorageResolution': self.__storage_resolution
+            }
+
+        temp_metric = create_metric(self.__class__.temperature_metric_name,
+                                    measurement.temperature)
+        humidity_metric = create_metric(self.__class__.humidity_metric_name,
+                                        measurement.humidity)
+        put_metric_data_params = {
+            'Namespace': self.__metrics_namespace,
+            'MetricData': [temp_metric, humidity_metric]
+        }
+        self.__cloudwatch.put_metric_data(**put_metric_data_params)
+        logging.info('Measurement recorded in cloudwatch %s',
+            json.dumps(put_metric_data_params))
+
+
 class Main: # pylint: disable=too-few-public-methods
     """Analogous to a Guice module, this just builds
     a deamon that performs the measurement
@@ -112,13 +236,35 @@ class Main: # pylint: disable=too-few-public-methods
         """
         self.__config = config
 
-    def create_deamon(self) -> BlockingDaemon:
+    @staticmethod
+    def __create_boto_session() -> "boto3.session.Session":
+        if len(os.environ.get('AWS_ACCESS_KEY_ID', '')) > 0 \
+            and len(os.environ.get('AWS_SECRET_ACCESS_KEY', '')) > 0:
+            return boto3.session.Session()
+
+        # Useful for local devel, without polluting prod data
+        logging.warning('Missing AWS credentials, using mock AWS clients for devel')
+        from unittest.mock import Mock # pylint: disable=import-outside-toplevel
+        session_mock = Mock()
+        cloudwatch_mock = Mock()
+        def put_metric_data(**args):
+            logging.warning('Mock cloudwatch client: put_metric_data called with args %s', args)
+        cloudwatch_mock.put_metric_data.side_effect = put_metric_data
+        session_mock.client.return_value = cloudwatch_mock
+        return session_mock
+
+    def create_deamon(self) -> ThreadDaemon:
         """Factory for the daemon object"""
         measurement_conf = self.__config['measurement']
-        meter = Dht11TempMeter(measurement_conf['source_name'])
+        meter: TempMeter = Dht11TempMeter(measurement_conf['source_name'])
+        boto_session = Main.__create_boto_session()
+        measurement_recorder: MeasurementRecorder = \
+            CloudwatchMeasurementRecorder(boto_session)
+
         def action():
-            meter.measure()
-        deamon = BlockingDaemon(
+            measurement_recorder.record(meter.measure())
+
+        deamon = ThreadDaemon(
             float(measurement_conf['frequency_in_seconds']),
             action
         )

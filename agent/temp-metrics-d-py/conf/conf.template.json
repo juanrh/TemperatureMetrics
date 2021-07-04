@@ -6,17 +6,20 @@
     },
     "deploy": {
         "temp_agent_root": "/opt/temp_agent",
-        "service_name": "temp_metrics",
-        "logging": {
-            "level": "INFO",
-            // config for https://docs.python.org/3/library/logging.handlers.html#timedrotatingfilehandler
-            "rotationInterval": 10, // interval
-            "rotationIntervalUnit": "S", // when
-            "maxLogFiles": 3 // backupCount
-        }
+        "service_name": "temp_metrics"
+    },
+    "logging": {
+        "level": "INFO",
+        // 
+        "rotationInterval": 10, // interval
+        "rotationIntervalUnit": "S", // when
+        "maxLogFiles": 3 // backupCount
     },
     "measurement": {
         "source_name": "",
         "frequency_in_seconds" : "5.0"
+    },
+    "aws": {
+        "credentials_filename": "aws_credentials.template.sh"
     }
 }

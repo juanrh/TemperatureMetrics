@@ -15,6 +15,7 @@ import logging
 import logging.handlers
 
 from invoke import task
+from envbash import load_envbash
 from fabric import Config, Connection
 from jinja2 import Template
 from tempd.agent import Main
@@ -44,7 +45,7 @@ def test(c):
     """Run all tests"""
     with c.cd(_script_dir):
         with print_title("Running unit tests"):
-            c.run("python setup.py test")
+            c.run('nosetests  --nocapture --nologcapture --verbosity=2')
 
 @task
 def release(c):
@@ -122,6 +123,10 @@ def deploy(c, conf):
         temp_agent_conf_root = f"{temp_agent_root}/conf"
         rc.run(f"mkdir -p {temp_agent_conf_root}")
         rc.put(conf, temp_agent_conf_root)
+        conf_root = os.path.dirname(conf)
+        aws_credentials_file = os.path.join(conf_root, config['aws']['credentials_filename'])
+        rc.put(aws_credentials_file, temp_agent_conf_root)
+        rc.sudo(f"chmod 600 {temp_agent_conf_root}/*")
 
     def setup_virtual_env():
         rc.run('pip3 install virtualenv')
@@ -152,6 +157,8 @@ def deploy(c, conf):
         rc.sudo(f"cp {temp_agent_root}/{service_name} {systemd_conf}")
         rc.sudo('systemctl daemon-reload')
         rc.sudo(f"systemctl restart {service_name}.service")
+        # Launch service at boot
+        rc.sudo(f"systemctl enable {service_name}.service")
 
     with print_title("Copying artifacts"):
         copy_artifacts()
@@ -215,28 +222,28 @@ def systemctl_agent(c, command, conf): # pylint: disable=unused-argument
     service_name = get_service_name(config)
     return rc.sudo(f"systemctl {command} {service_name}")
 
-def setup_logging(c, config, root_path=None):
+def setup_logging(c, config, agent_root=None):
     """
     Setup logging
 
     Params:
     - config: a configuration dictionary
-    - root_path: path for the root directory or None.
+    - agent_root: path for the root directory or None.
     If not None logs will be stored in a "log" subdirectory
-    of `root_path`
+    of `agent_root`
     """
-    loggging_conf = config['deploy']['logging']
+    loggging_conf = config['logging']
     logger = logging.getLogger()
     logger.setLevel(loggging_conf['level'])
-    formatter = logging.Formatter('%(asctime)s [%(process)d]: %(message)s')
+    formatter = logging.Formatter('%(asctime)s [%(levelname)s] - [%(process)d]: %(message)s')
     def setup_handler(handler):
         handler.setFormatter(formatter)
         handler.setLevel(loggging_conf['level'])
         logger.addHandler(handler)
     stdoutHandler = logging.StreamHandler()
     setup_handler(stdoutHandler)
-    if root_path is not None:
-        logging_root = os.path.join(root_path, 'log')
+    if agent_root is not None:
+        logging_root = os.path.join(agent_root, 'log')
         c.run(f"mkdir -p {logging_root}")
         service_name=config['deploy']['service_name']
         log_filename = os.path.join(logging_root, f"{service_name}.log")
@@ -254,12 +261,16 @@ def launch_agent(c, conf): # pylint: disable=unused-argument
     the program
 
     Example:
+        inv launch-agent --conf=conf/dev.json
         inv launch-agent --conf=conf/prod.json
     """
     config = read_conf(conf)
-    root_path = os.path.dirname(os.path.dirname(conf))
-    setup_logging(c, config, root_path)
+    conf_root = os.path.dirname(conf)
+    agent_root = os.path.dirname(conf_root)
+    aws_credentials_file = os.path.join(conf_root, config['aws']['credentials_filename'])
+    load_envbash(aws_credentials_file)
+
+    setup_logging(c, config, agent_root)
     main = Main(config)
     deamon = main.create_deamon()
-    deamon.start()
-    print("that's all")
+    deamon.start(blocking=True)

@@ -4,4 +4,6 @@ __pycache__
 build/
 dist/
 conf/prod.json
+conf/prod_aws_credentials.sh
+conf/dev.json
 log
