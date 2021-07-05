@@ -94,12 +94,14 @@ def test_daemon_runs_action_at_expected_frequency(action, daemon_frequency,
     action.assert_called_once()
 
 def test_daemon_keeps_working_on_action_exception(action, daemon):
+    """Check the daemon keeps running even when the action raises
+    an exception"""
     def raise_exception():
         raise RuntimeError("Forcing a runtime error")
     action.side_effect = raise_exception
 
     daemon.start(blocking=False)
-    
+
     # need to wait to give time for the exception to raise
     # in the thread
     daemon.wait_for_completion(1)
