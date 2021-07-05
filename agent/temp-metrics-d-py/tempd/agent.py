@@ -105,7 +105,10 @@ class ThreadDaemon:
             while self.__running:
                 current_time = self.__timer.time()
                 if current_time - latest_exec_time > self.__seconds:
-                    self.__action()
+                    try:
+                        self.__action()
+                    except Exception as e:
+                        logging.error('Deamon: exception executing action: %s', e)
                     latest_exec_time = current_time
                 self.__timer.sleep(ThreadDaemon.__polling_interval)
         self.__thread = threading.Thread(target=thread_function, daemon=True)
@@ -218,6 +221,8 @@ class CloudwatchMeasurementRecorder(MeasurementRecorder): # pylint: disable=too-
             'Namespace': self.__metrics_namespace,
             'MetricData': [temp_metric, humidity_metric]
         }
+        # This uses Boto's default retry strategy
+        # https://boto3.amazonaws.com/v1/documentation/api/latest/guide/retries.html 
         self.__cloudwatch.put_metric_data(**put_metric_data_params)
         logging.info('Measurement recorded in cloudwatch %s',
             json.dumps(put_metric_data_params))

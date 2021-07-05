@@ -92,3 +92,15 @@ def test_daemon_runs_action_at_expected_frequency(action, daemon_frequency,
     daemon.wait_for_completion(timeout=2*daemon_frequency)
     assert not daemon.running
     action.assert_called_once()
+
+def test_daemon_keeps_working_on_action_exception(action, daemon):
+    def raise_exception():
+        raise RuntimeError("Forcing a runtime error")
+    action.side_effect = raise_exception
+
+    daemon.start(blocking=False)
+    
+    # need to wait to give time for the exception to raise
+    # in the thread
+    daemon.wait_for_completion(1)
+    assert daemon.running
