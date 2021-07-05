@@ -5,13 +5,14 @@ Test for the module tempd.agent
 # This check is incompatible with pytests conventions
 # for fixtures
 # pylint: disable=redefined-outer-name
+import math
 from unittest.mock import patch
 from unittest.mock import Mock
 import signal
 
 import pytest
 
-from tempd.agent import ThreadDaemon
+from tempd.agent import Dht11TempMeter, Dht11TempMeterConfig, ThreadDaemon
 
 
 @pytest.fixture
@@ -31,14 +32,14 @@ def timer():
 
 @pytest.fixture
 def daemon(action, daemon_frequency):
-    """Mock for the daemon, using the real timer"""
+    """Create a daemon, using the real timer"""
     the_daemon = ThreadDaemon(daemon_frequency, action)
     yield the_daemon
     the_daemon.stop()
 
 @pytest.fixture
 def daemon_mock_timer(action, daemon_frequency, timer):
-    """Mock for the daemon, using a mock for the timer"""
+    """Create a daemon, using a mock for the timer"""
     the_daemon = ThreadDaemon(daemon_frequency, action, timer)
     yield the_daemon
     the_daemon.stop()
@@ -106,3 +107,41 @@ def test_daemon_keeps_working_on_action_exception(action, daemon):
     # in the thread
     daemon.wait_for_completion(1)
     assert daemon.running
+
+
+@pytest.fixture
+def sensor():
+    """Mock for the temp meter sensor"""
+    return Mock()
+
+@pytest.fixture
+def meter_source():
+    """Name of the source of the meter"""
+    return "foo_source"
+
+@pytest.fixture
+def dht11_temp_meter_config(timer, sensor):
+    """Create a test config using mocks for timer and sensor"""
+    return Dht11TempMeterConfig(1, 2, 3, sensor, timer)
+
+@pytest.fixture
+def dht11_temp_meter(meter_source, dht11_temp_meter_config):
+    """Create a temp meter"""
+    return Dht11TempMeter(meter_source, dht11_temp_meter_config)
+
+def test_meter_measure(meter_source, timer, sensor, dht11_temp_meter_config, dht11_temp_meter):
+    """Check the meter uses the sensor correctly, uses the right timestamp,
+    and retris nan measurements"""
+    expected_epoch_secs = 10
+    timer.time.return_value = 10 + 0.5
+    expected_temp = 100.0
+    expected_humidity = 200.1
+    sensor.side_effect = [(math.nan, math.nan), (expected_temp, expected_humidity)]
+
+    measurement = dht11_temp_meter.measure()
+
+    assert measurement.source == meter_source
+    assert measurement.timestamp == expected_epoch_secs
+    assert measurement.temperature == expected_temp
+    assert measurement.humidity == expected_humidity
+    timer.sleep.assert_called_once_with(dht11_temp_meter_config.retry_sleep_time)

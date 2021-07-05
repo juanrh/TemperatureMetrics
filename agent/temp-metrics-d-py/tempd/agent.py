@@ -68,6 +68,8 @@ class TimeTimer(Timer):
     def time(self):
         return time.time()
 
+_timer = TimeTimer()
+
 class ThreadDaemon:
     """
     A deamon that runs an action on a scheduled periodicity,
@@ -75,7 +77,7 @@ class ThreadDaemon:
     """
     def __init__(self, seconds: float,
                        action: Callable[[], None],
-                       timer: Timer = TimeTimer()):
+                       timer: Timer = _timer):
         """Schedule the process to run each `seconds` seconds"""
         self.__seconds = seconds
         self.__action = action
@@ -128,6 +130,21 @@ class ThreadDaemon:
             self.__thread.join(timeout)
 
 
+@dataclass
+class Dht11TempMeterConfig:
+    """The configuration of a Dht11TempMeter
+
+    Args:
+        sensor_port: grovepi port the sensor is connected to
+        sensor_type: use 0 for the blue-colored sensor and 1
+                     for the white one__dht_sensor_type
+    """
+    retry_sleep_time: float = 0.05
+    sensor_port: int = 7
+    sensor_type: int = 0
+    sensor: Dht11Sensor=dht11.measure
+    timer: Timer = _timer
+
 class Dht11TempMeter(TempMeter): # pylint: disable=too-few-public-methods
     """A temperature meter based on the DHT11 sensor
 
@@ -137,30 +154,25 @@ class Dht11TempMeter(TempMeter): # pylint: disable=too-few-public-methods
     - Temperature read precision of +/- 2 degree, fraction temperature is always 0
 
     https://wiki.seeedstudio.com/Grove-TemperatureAndHumidity_Sensor/"""
-    __dht_sensor_port = 7 # connect the DHt sensor to port 7
-    __dht_sensor_type = 0 # use 0 for the blue-colored sensor and 1 for the white one
 
     def __init__(self, source_name: str,
-                       retry_sleep_time: float = 0.05,
-                       sensor_port: int = __dht_sensor_port,
-                       sensor_type: int = __dht_sensor_type,
-                       sensor: Dht11Sensor=dht11.measure):
+                       config: Dht11TempMeterConfig = Dht11TempMeterConfig()):
         self.__source_name = source_name
-        self.__retry_sleep_time = retry_sleep_time
-        self.__sensor = lambda: sensor(sensor_port, sensor_type)
+        self.__retry_sleep_time = config.retry_sleep_time
+        self.__timer = config.timer
+        self.__sensor = lambda: config.sensor(config.sensor_port, config.sensor_type)
 
-    @staticmethod
-    def __get_current_timestamp():
-        return math.floor(time.time())
+    def __get_current_timestamp(self):
+        return math.floor(self.__timer.time())
 
     def measure(self) -> "TempMeasurement":
         (temperature, humidity) = self.__sensor()
         while math.isnan(temperature) or math.isnan(humidity):
             logging.debug("Retrying measurement")
-            time.sleep(self.__retry_sleep_time)
+            self.__timer.sleep(self.__retry_sleep_time)
             (temperature, humidity) = self.__sensor()
         measurement = TempMeasurement(self.__source_name,
-                               Dht11TempMeter.__get_current_timestamp(),
+                               self.__get_current_timestamp(),
                                temperature, humidity)
         logging.info('Measured %s', measurement)
         return measurement
