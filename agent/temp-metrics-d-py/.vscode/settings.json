@@ -2,5 +2,11 @@
     "python.pythonPath": ".venv/bin/python",
     "mypy.dmypyExecutable": "${workspaceFolder}/.venv/bin/dmypy",
     // for some reason ${workspaceFolder} doesn't expand right here
-    "mypy.configFile": "mypy.ini"
+    "mypy.configFile": "mypy.ini",
+    "python.testing.pytestArgs": [
+        "tempd/test"
+    ],
+    "python.testing.unittestEnabled": false,
+    "python.testing.nosetestsEnabled": false,
+    "python.testing.pytestEnabled": true
 }

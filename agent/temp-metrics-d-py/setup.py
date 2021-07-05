@@ -17,11 +17,9 @@ setup(name='tempd',
       # skip packaging tests
       packages=['tempd', 'tempd.sensors'],
       install_requires = [
-        'pip', 'wheel', 'setuptools',
+        'pip', 'wheel', 'setuptools', 'pytest', 'pytest-cov',
         'mypy>=0.910', 'typing_extensions>=3.10.0.0', 'pylint>=2.8.3',
         'invoke>=1.5.0', 'fabric>=2.6.0', 
-        'Jinja2>=3.0.1'
+        'Jinja2>=3.0.1', 'boto3>=1.17.102', 'envbash>=1.2.0'
       ],
-      test_suite='nose.collector',
-      tests_require=['nose'],
       zip_safe=False)

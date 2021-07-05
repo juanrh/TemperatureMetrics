@@ -48,8 +48,10 @@ class MeasurementRecorder(Protocol): # pylint: disable=too-few-public-methods
         ...
 
 class Timer(Protocol):
-    """A timer. This is required because patching time.time() doesn't work
-    because it is called outside this code"""
+    """A timer.
+    This makes the code more testeable, because even if
+    we patch the time module, we don't know how other third modules
+    might be using the time module"""
     def sleep(self, sleep_time:float):
         """Block this thread for a number of milliseconds"""
         ...
@@ -71,8 +73,8 @@ class ThreadDaemon:
     A deamon that runs an action on a scheduled periodicity,
     running on its own thread
     """
-    def __init__(self, seconds: float, 
-                       action: Callable[[], None], 
+    def __init__(self, seconds: float,
+                       action: Callable[[], None],
                        timer: Timer = TimeTimer()):
         """Schedule the process to run each `seconds` seconds"""
         self.__seconds = seconds
@@ -102,9 +104,6 @@ class ThreadDaemon:
             latest_exec_time = 0
             while self.__running:
                 current_time = self.__timer.time()
-                print(f"current_time : {current_time}") # FIXME
-                print(f"self.__seconds: {self.__seconds}")
-                print(f"latest_exec_time {latest_exec_time}")
                 if current_time - latest_exec_time > self.__seconds:
                     self.__action()
                     latest_exec_time = current_time

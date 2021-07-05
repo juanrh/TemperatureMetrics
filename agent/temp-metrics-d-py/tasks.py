@@ -45,7 +45,11 @@ def test(c):
     """Run all tests"""
     with c.cd(_script_dir):
         with print_title("Running unit tests"):
-            c.run('nosetests  --nocapture --nologcapture --verbosity=2')
+            root_module = 'tempd'
+            run_tests = \
+                f"pytest -vv -o log_cli=true -o log_cli_level=debug -s --pyargs {root_module}"
+            get_coverage = f"--cov={root_module} --cov-report html --cov-report term"
+            c.run(f"{run_tests} {get_coverage}")
 
 @task
 def release(c):
