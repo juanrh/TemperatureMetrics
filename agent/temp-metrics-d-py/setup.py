@@ -10,7 +10,7 @@ if (major, minor) not in supported_python_versions:
 
 setup(name='tempd',
       version='0.1',
-      description='Temperatura metrics daemon',
+      description='Temperature metrics daemon',
       author='Juan Rodriguez Hortala',
       author_email='juan.rodriguez.hortala@gmail.com',
       license='Apache 2.0',

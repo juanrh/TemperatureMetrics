@@ -1,4 +1,4 @@
-name: Temperatura metrics daemon
+name: Temperature metrics daemon
 
 on: [push]
 
