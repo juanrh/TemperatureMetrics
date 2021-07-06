@@ -12,7 +12,8 @@ import signal
 
 import pytest
 
-from tempd.agent import Dht11TempMeter, Dht11TempMeterConfig, ThreadDaemon
+from tempd.agent import CloudwatchMeasurementRecorder, Dht11TempMeter
+from tempd.agent import Dht11TempMeterConfig, TempMeasurement, ThreadDaemon
 
 
 @pytest.fixture
@@ -145,3 +146,60 @@ def test_meter_measure(meter_source, timer, sensor, dht11_temp_meter_config, dht
     assert measurement.temperature == expected_temp
     assert measurement.humidity == expected_humidity
     timer.sleep.assert_called_once_with(dht11_temp_meter_config.retry_sleep_time)
+
+
+@pytest.fixture
+def cloudwatch():
+    """Mock for the AWS cloudwatch client"""
+    return Mock()
+
+@pytest.fixture
+def boto_session(cloudwatch):
+    """Mock for the boto session"""
+    session = Mock()
+    session.client.return_value = cloudwatch
+    return session
+
+@pytest.fixture
+def cw_namespace():
+    """Cloudwach namespace for the CloudwatchMeasurementRecorder"""
+    return "foo_namespace"
+
+@pytest.fixture
+def storage_resolution():
+    """Storage resolution for the CloudwatchMeasurementRecorder"""
+    return 12
+
+@pytest.fixture
+def cloudwatch_recorder(boto_session, cw_namespace, storage_resolution):
+    """Create a CloudwatchMeasurementRecorder"""
+    return CloudwatchMeasurementRecorder(boto_session, cw_namespace, storage_resolution)
+
+def test_cloudwatch_recorder_record(cloudwatch, cw_namespace,
+    storage_resolution, cloudwatch_recorder):
+    """Check measurements are sent to cloudwatch as expected"""
+
+    measurement = TempMeasurement('foo_source', 10, 20.1, 40.2)
+
+    cloudwatch_recorder.record(measurement)
+
+    def expected_metric(metric_name, value):
+        return {
+            'MetricName': metric_name,
+            'Dimensions': [
+                {
+                    'Name': 'source',
+                   'Value': measurement.source
+                },
+            ],
+            'Timestamp': measurement.timestamp,
+            'Value': value,
+           'StorageResolution': storage_resolution
+        }
+
+    cloudwatch.put_metric_data.assert_called_once_with(Namespace=cw_namespace,
+        MetricData=[
+            expected_metric('temperature', measurement.temperature),
+            expected_metric('humidity', measurement.humidity)
+        ]
+    )

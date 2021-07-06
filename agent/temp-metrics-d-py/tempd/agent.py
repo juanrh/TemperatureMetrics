@@ -35,7 +35,7 @@ class TempMeter(Protocol): # pylint: disable=too-few-public-methods
 
     Only valid measurements should be returned, e.g. discard NaN returned by the
     driver and retry until a valid measurement is obtained"""
-    def measure(self) -> "TempMeasurement":
+    def measure(self) -> TempMeasurement:
         """Get a new measurement from the sensor"""
         ...
 
@@ -43,7 +43,7 @@ class TempMeter(Protocol): # pylint: disable=too-few-public-methods
 class MeasurementRecorder(Protocol): # pylint: disable=too-few-public-methods
     """A measurement recorder is able to record measurements in some
     permanent storage"""
-    def record(self, measurement: "TempMeasurement"):
+    def record(self, measurement: TempMeasurement):
         """Records a measurement in some permanent storage"""
         ...
 
@@ -165,7 +165,7 @@ class Dht11TempMeter(TempMeter): # pylint: disable=too-few-public-methods
     def __get_current_timestamp(self):
         return math.floor(self.__timer.time())
 
-    def measure(self) -> "TempMeasurement":
+    def measure(self) -> TempMeasurement:
         (temperature, humidity) = self.__sensor()
         while math.isnan(temperature) or math.isnan(humidity):
             logging.debug("Retrying measurement")
@@ -210,7 +210,7 @@ class CloudwatchMeasurementRecorder(MeasurementRecorder): # pylint: disable=too-
         self.__storage_resolution = storage_resolution
         self.__cloudwatch = session.client('cloudwatch')
 
-    def record(self, measurement: "TempMeasurement"):
+    def record(self, measurement: TempMeasurement):
         def create_metric(metric_name, value):
             return {
                 'MetricName': metric_name,
