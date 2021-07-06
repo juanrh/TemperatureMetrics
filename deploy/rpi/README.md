@@ -101,7 +101,3 @@ temperature=26.0, humidity=48.0
 temperature=26.0, humidity=48.0
 >>> 
 ```
-
-TODO:
-
-- Install Grove client C++ libraries, and access temperature and humidity measurements from C++
