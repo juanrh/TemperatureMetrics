@@ -43,13 +43,23 @@ Also
 
 ### Development
 
-Create a production configuration from the template `conf/conf.template.json`
+Create a production configuration from the template `conf/conf.template.json`. Same for the AWS credentials, starting with `conf/aws_credentials.template.sh`. Regarding the condiguration: 
 
-See VsCode tasks in `.vscode/tasks.json`, and invoke tasks with `inv -l`.
+- "logging" section specifies parameters for [`TimedRotatingFileHandler`](https://docs.python.org/3/library/logging.handlers.html#timedrotatingfilehandler), with "rotationInterval" equal to "interval", "rotationIntervalUnit" equal to "when", and "maxLogFiles" equal to "backupCount"
+- "aws" specifies which credentials filename to use. For devel it's useful to use `aws_credentials.template.sh` so we don't actually call CloudWatch (cost, handling many AWS accounts, ...). When credentials are empty strings a fake cloudwatch client is used, that just logs the calls to `put_metric_data` it receives.
 
-## TODO
+See VsCode tasks in `.vscode/tasks.json`, and invoke tasks with `inv -l`:
 
-- publish to cloudwtach
-- add test coverage analysis
-- use async clients
-- For Cpp server influxdb or other time series DB would be optimal, but I want embedded. Rocksdb can also be used for time series, see https://itnext.io/storing-time-series-in-rocksdb-a-cookbook-e873fcb117e4 
+```bash
+# run unit tests, linter, and other code quality tools
+inv release
+
+# Run locally with fake cloudwatch metrics client
+inv launch-agent --conf=conf/dev.json
+
+# deploy to prod
+inv deploy --conf=conf/prod.json
+
+# check agent status in prod
+inv check-agent-status --conf=conf/prod.json
+```

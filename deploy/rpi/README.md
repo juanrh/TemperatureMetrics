@@ -52,9 +52,7 @@ pi@temperature:~ $
 Using a JBTek USB TTL cable, and following [these instructions](https://www.adafruit.com/product/954) and [this tutorial](https://learn.adafruit.com/adafruits-raspberry-pi-lesson-5-using-a-console-cable). Steps:
 
 - Install client drivers: For Linux we don't need to install any driver, see those instructions for other OS. 
-- Enable serial console on the RPI: TODO
-
-TODO as local wifi access is enough for now
+- Enable serial console on the RPI: TODO as local wifi access is enough for now
 
 ## GrovePi+ setup
 
