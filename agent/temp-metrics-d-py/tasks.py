@@ -239,7 +239,8 @@ def setup_logging(c, config, agent_root=None):
     loggging_conf = config['logging']
     logger = logging.getLogger()
     logger.setLevel(loggging_conf['level'])
-    formatter = logging.Formatter('%(asctime)s [%(levelname)s] - [%(process)d]: %(message)s')
+    formatter = \
+        logging.Formatter('%(asctime)s [%(levelname)s] - [%(process)d] - %(name)s: %(message)s')
     def setup_handler(handler):
         handler.setFormatter(formatter)
         handler.setLevel(loggging_conf['level'])

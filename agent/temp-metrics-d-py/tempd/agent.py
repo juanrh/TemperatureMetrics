@@ -75,6 +75,9 @@ class ThreadDaemon:
     A deamon that runs an action on a scheduled periodicity,
     running on its own thread
     """
+
+    logger = logging.getLogger('ThreadDaemon')
+
     def __init__(self, seconds: float,
                        action: Callable[[], None],
                        timer: Timer = _timer):
@@ -102,7 +105,7 @@ class ThreadDaemon:
         signal.signal(signal.SIGINT, lambda _signal, _stack: self.stop())
         self.__running = True
         def thread_function():
-            logging.info("Starting deamon")
+            self.__class__.logger.info("Starting deamon")
             latest_exec_time = 0
             while self.__running:
                 current_time = self.__timer.time()
@@ -110,7 +113,7 @@ class ThreadDaemon:
                     try:
                         self.__action()
                     except Exception as exception: # pylint: disable=broad-except
-                        logging.error('Deamon: exception executing action: %s', exception)
+                        self.__class__.logger.error('Exception executing action: %s', exception)
                     latest_exec_time = current_time
                 self.__timer.sleep(ThreadDaemon.__polling_interval)
         self.__thread = threading.Thread(target=thread_function, daemon=True)
@@ -121,7 +124,7 @@ class ThreadDaemon:
 
     def stop(self):
         """Stop the deamon"""
-        logging.info("Stopping deamon")
+        self.__class__.logger.info("Stopping deamon")
         self.__running = False
 
     def wait_for_completion(self, timeout: float):
@@ -155,6 +158,8 @@ class Dht11TempMeter(TempMeter): # pylint: disable=too-few-public-methods
 
     https://wiki.seeedstudio.com/Grove-TemperatureAndHumidity_Sensor/"""
 
+    logger = logging.getLogger('Dht11TempMeter')
+
     def __init__(self, source_name: str,
                        config: Dht11TempMeterConfig = Dht11TempMeterConfig()):
         self.__source_name = source_name
@@ -168,13 +173,13 @@ class Dht11TempMeter(TempMeter): # pylint: disable=too-few-public-methods
     def measure(self) -> TempMeasurement:
         (temperature, humidity) = self.__sensor()
         while math.isnan(temperature) or math.isnan(humidity):
-            logging.debug("Retrying measurement")
+            self.__class__.logger.debug("Retrying measurement")
             self.__timer.sleep(self.__retry_sleep_time)
             (temperature, humidity) = self.__sensor()
         measurement = TempMeasurement(self.__source_name,
                                self.__get_current_timestamp(),
                                temperature, humidity)
-        logging.info('Measured %s', measurement)
+        self.__class__.logger.info('Measured %s', measurement)
         return measurement
 
 
@@ -195,6 +200,7 @@ class CloudwatchMeasurementRecorder(MeasurementRecorder): # pylint: disable=too-
     source_dimension = 'source'
     temperature_metric_name = 'temperature'
     humidity_metric_name = 'humidity'
+    logger = logging.getLogger('CloudwatchMeasurementRecorder')
 
     def __init__(self, session: "boto3.session.Session",
                  namespace:str='temp_agent',
@@ -236,7 +242,7 @@ class CloudwatchMeasurementRecorder(MeasurementRecorder): # pylint: disable=too-
         # This uses Boto's default retry strategy
         # https://boto3.amazonaws.com/v1/documentation/api/latest/guide/retries.html
         self.__cloudwatch.put_metric_data(**put_metric_data_params)
-        logging.info('Measurement recorded in cloudwatch %s',
+        self.__class__.logger.info('Measurement recorded in cloudwatch %s',
             json.dumps(put_metric_data_params))
 
 
