@@ -6,6 +6,8 @@ dist/
 conf/prod.json
 conf/prod_aws_credentials.sh
 conf/dev.json
+conf/comedor.json
+conf/despacho.json
 log
 htmlcov/
 .coverage

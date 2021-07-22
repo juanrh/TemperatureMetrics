@@ -9,7 +9,7 @@ To setup networking:
 1. Change password with `passwd`. Ver RPI_temperature_metrics en person_SBC.
 2. Config wifi with UI.
 3. Enable sshd with `sudo raspi-config`.
-4. Enable multicast DNS (mDNS) so we can usa a domain name from our local network instead of an actual IP, as that is changing. For that just change the hostname with `sudo raspi-config` and System Options -> Hostname to `temperature.local`, save and reboot. Now we can ssh to the host as `ssh pi@temperature.local` 
+4. Enable multicast DNS (mDNS) so we can use a domain name from our local network instead of an actual IP, as that is changing. For that just change the hostname with `sudo raspi-config` and System Options -> Hostname to `temperature.local`, save and reboot. Now we can ssh to the host as `ssh pi@temperature.local`
 5. Setup passwordless ssh with `ssh-copy-id -i ~/.ssh/id_rsa pi@temperature.local`, and adding the following to ~/.ssh/config in my laptop
 
       ```
@@ -66,7 +66,7 @@ cd /home/pi/Dexter/GrovePi/Firmware
 bash firmware_update.sh
 ```
 
-Now to test this works, connect the temperature and humidity sensor to port D7. Then use the following modification of the [temperature sensor demo](https://github.com/DexterInd/GrovePi/blob/master/Projects/Home_Weather_Display/Home_Weather_Display.py) from a Python shell. Note the installation above installed the grove pi python libraries system wide, at least for the default Python 2.7:
+Now to test this works, connect the temperature and humidity sensor DHT11 to port D7. Then use the following modification of the [temperature sensor demo](https://github.com/DexterInd/GrovePi/blob/master/Projects/Home_Weather_Display/Home_Weather_Display.py) from a Python shell. Note the installation above installed the grove pi python libraries system wide, at least for the default Python 2.7:
 
 ```python
 from grovepi import *
@@ -98,4 +98,49 @@ temperature=26.0, humidity=48.0
 temperature=26.0, humidity=48.0
 temperature=26.0, humidity=48.0
 >>> 
+```
+
+### Setup for SHT31 sensor
+
+In [seeed studio wiki for SHT31](https://wiki.seeedstudio.com/Grove-TempAndHumi_Sensor-SHT31/#play-with-raspberry-pi) we see it connects through I2C, so connect it to [some I2C port](https://www.dexterindustries.com/GrovePi/engineering/port-description/) of the GrovePI+.  
+We also have to [enable I2C at the OS level](https://www.raspberrypi.org/forums/viewtopic.php?t=115080) with `sudo raspi-config` in Interfacing Options -> I2C - > Enable. If all went well we'll have:
+
+```bash
+pi@temp-comedor:~ $ lsmod | grep i2c
+i2c_bcm2835            16384  0
+i2c_dev                20480  0
+pi@temp-comedor:~ $ ls -al /dev/i2c*
+crw-rw---- 1 root i2c 89, 1 jul 22 22:13 /dev/i2c-1
+pi@temp-comedor:~ $
+```
+
+Now we can read the sensor reading from the I2C bus:
+
+```python
+# From https://github.com/ControlEverythingCommunity/SHT31/blob/master/Python/SHT31.py
+import smbus
+import time
+
+# Get I2C bus
+bus = smbus.SMBus(1)
+
+def read_sensor():
+    # SHT31 address, 0x44(68)
+    # Send measurement command, 0x2C(44)
+    #		0x06(06)	High repeatability measurement
+    bus.write_i2c_block_data(0x44, 0x2C, [0x06])
+    time.sleep(0.25)
+    # SHT31 address, 0x44(68)
+    # Read data back from 0x00(00), 6 bytes
+    # Temp MSB, Temp LSB, Temp CRC, Humididty MSB, Humidity LSB, Humidity CRC
+    data = bus.read_i2c_block_data(0x44, 0x00, 6)
+    # Convert the data
+    temp = data[0] * 256 + data[1]
+    cTemp = -45 + (175 * temp / 65535.0)
+    fTemp = -49 + (315 * temp / 65535.0)
+    humidity = 100 * (data[3] * 256 + data[4]) / 65535.0
+    return (cTemp, humidity)
+
+for _ in range(10):
+    read_sensor()
 ```
