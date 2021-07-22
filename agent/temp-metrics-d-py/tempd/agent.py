@@ -14,7 +14,7 @@ from typing import Callable, Optional
 from typing_extensions import Protocol
 import boto3
 
-from .sensors.types import Dht11Sensor
+from .sensors.types import TempSensor
 from .sensors import dht11
 
 @dataclass
@@ -145,7 +145,7 @@ class Dht11TempMeterConfig:
     retry_sleep_time: float = 0.05
     sensor_port: int = 7
     sensor_type: int = 0
-    sensor: Dht11Sensor=dht11.measure
+    sensor: TempSensor=dht11.measure
     timer: Timer = _timer
 
 class Dht11TempMeter(TempMeter): # pylint: disable=too-few-public-methods
