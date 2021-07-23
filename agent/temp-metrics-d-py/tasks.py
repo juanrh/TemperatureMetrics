@@ -161,6 +161,7 @@ def deploy(c, conf):
         rc.sudo(f"cp {temp_agent_root}/{service_name} {systemd_conf}")
         rc.sudo('systemctl daemon-reload')
         rc.sudo(f"systemctl restart {service_name}.service")
+        rc.sudo(f"systemctl status {service_name}.service")
         # Launch service at boot
         rc.sudo(f"systemctl enable {service_name}.service")
 
@@ -173,24 +174,8 @@ def deploy(c, conf):
         with print_title("Updating agent"):
             update_agent()
 
-    with print_title("Running smoke test for deployment"):
-        smoke_test_deployment(c, conf)
-
     with print_title("(Re)Start agent"):
         setup_systemd()
-
-@task
-def smoke_test_deployment(c, conf): # pylint: disable=unused-argument
-    """
-    Example:
-        inv smoke-test-deployment --conf=conf/prod.json
-    """
-    config = read_conf(conf)
-    rc = connect_with_sudo(config)
-    temp_agent_root = config['deploy']['temp_agent_root']
-    with rc.prefix(f"cd {temp_agent_root}"):
-        with rc.prefix(f". {_activate_virtualenv}"):
-            rc.run("""python -c 'from tempd.agent import Dht11TempMeter; print(Dht11TempMeter("foo").measure())'""") # pylint: disable=line-too-long
 
 def get_service_name(config):
     """Get the name of the systemctl service used for the agent"""
@@ -206,7 +191,6 @@ def check_agent_status(c, conf):
         inv check-agent-status --conf=conf/prod.json
     """
     systemctl_agent(c, 'status', conf)
-
 
 @task
 def stop_agent(c, conf):
