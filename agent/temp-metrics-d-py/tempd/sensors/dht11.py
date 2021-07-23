@@ -11,17 +11,34 @@ References:
 """
 
 from typing import cast
-from .types import TempMeasurement
+from .types import TempMeasurement, TempSensor
 from . import fake
 
-try:
-    from grovepi import dht # type: ignore # pylint: disable=import-error
-    def measure(sensor_port: int, sensor_type: int) -> TempMeasurement:
+class Sensor(TempSensor): # pylint: disable=too-few-public-methods
+    """A temperature meter based on the DHT11 sensor
+
+        Limitations:
+
+        - It is not able to reliably read at a frequency faster than 5 seconds
+        - Temperature read precision of +/- 2 degree, fraction temperature is always 0
+
+        https://wiki.seeedstudio.com/Grove-TemperatureAndHumidity_Sensor/"""
+    def __init__(self, sensor_port: int, sensor_type: int):
+        """
+        Args:
+            sensor_port: grovepi port the sensor is connected to
+            sensor_type: use 0 for the blue-colored sensor and 1
+                for the white one__dht_sensor_type
+        """
+        try:
+            from grovepi import dht # type: ignore # pylint: disable=import-error,import-outside-toplevel
+
+            self.__measure = lambda: cast(TempMeasurement, dht(sensor_port, sensor_type))
+        except ModuleNotFoundError as mnfe:
+            print(f"WARNING: No driver for DHT11 sensor found, fake measures will be returned for this sensor: {mnfe}") # pylint: disable=line-too-long
+            sensor = fake.Sensor()
+            self.__measure = sensor.measure
+
+    def measure(self) -> TempMeasurement:
         """Get a measurement fom the DHT11 sensor"""
-        # https://mypy.readthedocs.io/en/stable/casts.html#casts
-        return cast(TempMeasurement, dht(sensor_port, sensor_type))
-except ModuleNotFoundError as mnfe:
-    print(f"WARNING: No driver for DHT11 sensor found, fake measures will be returned for this sensor: {mnfe}") # pylint: disable=line-too-long
-    def measure(sensor_port: int, sensor_type: int) -> TempMeasurement: # pylint: disable=unused-argument
-        """Stub reading for DHT11 sensor"""
-        return fake.measure(sensor_port, sensor_type)
+        return self.__measure()

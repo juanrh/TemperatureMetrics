@@ -17,7 +17,8 @@
     },
     "measurement": {
         "source_name": "",
-        "frequency_in_seconds" : "5.0"
+        "frequency_in_seconds" : "5.0",
+        "sensor_type": "dht11" // dht11 (default) or sht31
     },
     "aws": {
         "credentials_filename": "aws_credentials.template.sh"

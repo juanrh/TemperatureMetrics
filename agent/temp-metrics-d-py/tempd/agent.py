@@ -9,13 +9,13 @@ import logging
 import os
 import json
 import threading
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import Callable, Optional
 from typing_extensions import Protocol
 import boto3
 
 from .sensors.types import TempSensor
-from .sensors import dht11
+from .sensors import dht11, sht31
 
 @dataclass
 class TempMeasurement:
@@ -28,17 +28,6 @@ class TempMeasurement:
     timestamp: int
     temperature: float
     humidity: float
-
-
-class TempMeter(Protocol): # pylint: disable=too-few-public-methods
-    """A temperature meter is able to get temperature measurements
-
-    Only valid measurements should be returned, e.g. discard NaN returned by the
-    driver and retry until a valid measurement is obtained"""
-    def measure(self) -> TempMeasurement:
-        """Get a new measurement from the sensor"""
-        ...
-
 
 class MeasurementRecorder(Protocol): # pylint: disable=too-few-public-methods
     """A measurement recorder is able to record measurements in some
@@ -134,54 +123,43 @@ class ThreadDaemon:
 
 
 @dataclass
-class Dht11TempMeterConfig:
-    """The configuration of a Dht11TempMeter
-
-    Args:
-        sensor_port: grovepi port the sensor is connected to
-        sensor_type: use 0 for the blue-colored sensor and 1
-                     for the white one__dht_sensor_type
-    """
+class TempMeterConfig:
+    """The configuration of a TempMeter"""
     retry_sleep_time: float = 0.05
-    sensor_port: int = 7
-    sensor_type: int = 0
-    sensor: TempSensor=dht11.measure
+    sensor: TempSensor = dht11.Sensor(7, 0)
     timer: Timer = _timer
 
-class Dht11TempMeter(TempMeter): # pylint: disable=too-few-public-methods
-    """A temperature meter based on the DHT11 sensor
+class TempMeter: # pylint: disable=too-few-public-methods
+    """A temperature meter is able to get temperature measurements
 
-    Limitations:
+    Only valid measurements are returned, e.g. by discarding NaN
+    returned by the driver and retry until a valid measurement is
+    obtained"""
 
-    - It is not able to reliably read at a frequency faster than 5 seconds
-    - Temperature read precision of +/- 2 degree, fraction temperature is always 0
-
-    https://wiki.seeedstudio.com/Grove-TemperatureAndHumidity_Sensor/"""
-
-    logger = logging.getLogger('Dht11TempMeter')
+    logger = logging.getLogger('TempMeter')
 
     def __init__(self, source_name: str,
-                       config: Dht11TempMeterConfig = Dht11TempMeterConfig()):
+                       config: TempMeterConfig = TempMeterConfig()):
         self.__source_name = source_name
         self.__retry_sleep_time = config.retry_sleep_time
         self.__timer = config.timer
-        self.__sensor = lambda: config.sensor(config.sensor_port, config.sensor_type)
+        self.__sensor = config.sensor
 
     def __get_current_timestamp(self):
         return math.floor(self.__timer.time())
 
     def measure(self) -> TempMeasurement:
-        (temperature, humidity) = self.__sensor()
+        """Get a measurement from the sensor"""
+        (temperature, humidity) = self.__sensor.measure()
         while math.isnan(temperature) or math.isnan(humidity):
             self.__class__.logger.debug("Retrying measurement")
             self.__timer.sleep(self.__retry_sleep_time)
-            (temperature, humidity) = self.__sensor()
+            (temperature, humidity) = self.__sensor.measure()
         measurement = TempMeasurement(self.__source_name,
                                self.__get_current_timestamp(),
                                temperature, humidity)
         self.__class__.logger.info('Measured %s', measurement)
         return measurement
-
 
 class CloudwatchMeasurementRecorder(MeasurementRecorder): # pylint: disable=too-few-public-methods
     """A MeasurementRecorder that stores the measurements
@@ -275,10 +253,27 @@ class Main: # pylint: disable=too-few-public-methods
         session_mock.client.return_value = cloudwatch_mock
         return session_mock
 
-    def create_deamon(self) -> ThreadDaemon:
-        """Factory for the daemon object"""
+    def create_temp_meter(self) -> TempMeter:
+        """Factory for the TempMeter"""
+        temp_meter_config = TempMeterConfig()
         measurement_conf = self.__config['measurement']
-        meter: TempMeter = Dht11TempMeter(measurement_conf['source_name'])
+        sensor_type = measurement_conf.get('sensor_type', 'dht11')
+        if sensor_type == 'dht11':
+            # captured by default conf
+            pass
+        elif sensor_type == 'sht31':
+            temp_meter_config = replace(temp_meter_config, sensor=sht31.Sensor())
+        else:
+            logging.warning('Unknown value for configuration measurement.sensor_type:  %s',
+                sensor_type)
+            msg = f"Unknown value for configuration measurement.sensor_type: '{sensor_type}'"
+            raise Exception(msg)
+        return TempMeter(measurement_conf['source_name'], config=temp_meter_config)
+
+    def create_deamon(self) -> ThreadDaemon:
+        """Factory for the daemon"""
+        measurement_conf = self.__config['measurement']
+        meter: TempMeter = self.create_temp_meter()
         boto_session = Main.__create_boto_session()
         measurement_recorder: MeasurementRecorder = \
             CloudwatchMeasurementRecorder(boto_session)
