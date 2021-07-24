@@ -8,6 +8,7 @@ References:
 """
 import os
 import time
+from retrying import retry
 from .types import TempMeasurement, TempSensor
 from . import fake
 
@@ -21,16 +22,23 @@ def is_rpi():
     return False
 
 class Sensor(TempSensor): # pylint: disable=too-few-public-methods
-    """A temperature meter based on the DHT11 sensor
+    """A temperature meter based on the DHT11 sensor. This sensor has
+    2 decimal precision for temperature, but it's not very stable:
+
+    - Sometimes it fails to measure with "OSError: [Errno 121] Remote I/O error",
+    this is an error documented in several internet forums. Mitigated by
+    retrying the measure after a small wait
+    - There are occasional spikes in the measurements, specially for the humidity.
 
     Adapted from https://github.com/ControlEverythingCommunity/SHT31/blob/master/Python/SHT31.py
+    and https://wiki.seeedstudio.com/Grove-TempAndHumi_Sensor-SHT31/#software_1
     """
     __is_rpi = is_rpi()
     __SENSOR_ADDRESS = 0x44 # SHT31 address
     __SEND_MEASUREMENT_CMD = 0x2C # Send measurement command
     __SEND_MEASUREMENT_CMD_ARGS = [0x06] # High repeatability measurement
     # Time recommended in https://wiki.seeedstudio.com/Grove-TempAndHumi_Sensor-SHT31/#software_1
-    __CMD_EXEC_TIME = 0.016
+    __CMD_EXEC_TIME = 0.032
     __READ_MEASUREMENT_CMD = 0x00
     __MEASUREMENT_MSG_BYTE_SIZE = 6
 
@@ -43,6 +51,8 @@ class Sensor(TempSensor): # pylint: disable=too-few-public-methods
             print("WARNING: Running on a platform different than RPI, fake measures will be returned for SHT31 sensor") # pylint: disable=line-too-long
             self.__sensor: TempSensor = fake.Sensor()
 
+    @retry(wait_fixed=200, wrap_exception=True,
+           retry_on_exception=lambda ex: isinstance(ex, OSError))
     def measure(self) -> TempMeasurement:
         """Get a temperature (in Celsius) and humidity measurement
         from the SHT31 sensor through the I2C bus"""
