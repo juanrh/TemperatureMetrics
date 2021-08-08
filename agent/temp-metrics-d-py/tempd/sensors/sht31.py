@@ -51,7 +51,7 @@ class Sensor(TempSensor): # pylint: disable=too-few-public-methods
             print("WARNING: Running on a platform different than RPI, fake measures will be returned for SHT31 sensor") # pylint: disable=line-too-long
             self.__sensor: TempSensor = fake.Sensor()
 
-    @retry(wait_fixed=200, wrap_exception=True,
+    @retry(wait_fixed=10, stop_max_attempt_number=2000, wrap_exception=True,
            retry_on_exception=lambda ex: isinstance(ex, OSError))
     def measure(self) -> TempMeasurement:
         """Get a temperature (in Celsius) and humidity measurement
