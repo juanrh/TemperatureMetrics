@@ -21,10 +21,6 @@ file(GLOB all_SRC
      "src/*.cpp"
 )
 
-# Using the Conan "cmake_find_package" generator
-# set(CMAKE_MODULE_PATH ${CMAKE_BINARY_DIR} ${CMAKE_MODULE_PATH})
-# set(CMAKE_PREFIX_PATH ${CMAKE_BINARY_DIR} ${CMAKE_PREFIX_PATH})
-
 add_executable(main ${all_SRC} )
 
 # To enable threads
