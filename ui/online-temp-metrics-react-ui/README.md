@@ -8,6 +8,19 @@ npx create-react-app online-temp-metrics-react-ui --template typescript
 
 ## Available Scripts
 
+__TL;DR__:
+
+```bash
+# release build
+CI=true npm test && CI=true npm run build
+
+# run debug: at http://localhost:3000/
+npm start
+
+# run release (local): at http://localhost:5000/
+serve -s build
+```
+
 In the project directory, you can run:
 
 ### `npm start`
@@ -17,11 +30,14 @@ Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
 
 The page will reload if you make edits.\
 You will also see any lint errors in the console.
+Logs emitted with `console.log` and friends are visible in the browser: e.g. with Chrome dev tools in the "Console" tab
 
 ### `npm test`
 
 Launches the test runner in the interactive watch mode.\
 See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+
+To [run all tests non-interactively](https://create-react-app.dev/docs/running-tests/#on-ci-servers): `CI=true npm test`
 
 ### `npm run build`
 
@@ -32,6 +48,11 @@ The build is minified and the filenames include the hashes.\
 Your app is ready to be deployed!
 
 See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+
+- To [force linting](https://create-react-app.dev/docs/running-tests/#continuous-integration) during the build: `CI=true npm run build`
+- To run the build artifacts, a [simple local setup](https://create-react-app.dev/docs/deployment/#static-server)
+  - One time setup: `sudo npm install -g serve`
+  - Launch app: `serve -s build` which runs the app at http://localhost:5000/
 
 ### `npm run eject`
 
