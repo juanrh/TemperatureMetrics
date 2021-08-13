@@ -1,28 +1,64 @@
 import React from 'react';
 import './App.css';
+import { Button, Divider, TextField, Typography } from '@material-ui/core';
 
-interface PlayMetricsButtonProps {}
-interface PlayMetricsButtonState {
-  measuring: boolean
+interface PlayMetricsButtonProps {
+  measuring: boolean,
+  onClick: () => void
 }
+interface PlayMetricsButtonState {}
 /**
  * Button to start or stop the metrics collection
  * */
 class PlayMetricsButton extends React.Component<PlayMetricsButtonProps, PlayMetricsButtonState> {
   constructor(props: PlayMetricsButtonProps) {
     super(props);
-    this.state = {
-      measuring: false
-    }
+
     // This binding is necessary to make `this` work in the callback
     this.handleClick = this.handleClick.bind(this);
   }
 
   handleClick() {
+    this.props.onClick();
+  }
+
+  render() {
+    return (
+      <div className="Basic-button">
+        <Button onClick={this.handleClick} variant="contained" color="primary">{this.props.measuring ? "Stop" : "Start"}</Button>
+      </div>
+    );
+  }
+}
+
+interface MetricsControlPanelProps {}
+interface MetricsControlPanelState {
+  agentHostname: string,
+  measuring: boolean
+}
+class MetricsControlPanel extends React.Component<MetricsControlPanelProps, MetricsControlPanelState> {
+  constructor(props: MetricsControlPanelProps) {
+    super(props);
+    this.state = {
+      agentHostname: "hostname",
+      measuring: false
+    };
+    this.handleTextChange = this.handleTextChange.bind(this);
+    this.handlePlayMetricsButtonClick = this.handlePlayMetricsButtonClick.bind(this);
+  }
+
+  handleTextChange(event: React.ChangeEvent<HTMLInputElement>) {
+    this.setState({agentHostname: event.target.value});
+  }
+
+  handlePlayMetricsButtonClick() {
+    const trimmedHostname = this.state.agentHostname.trim();
     if (this.state.measuring) {
-      console.log("Stop measuring");
+      console.log(`Stop measuring for host [${trimmedHostname}]`);
+      // TODO
     } else {
-      console.log("Start measuring");
+      console.log(`Start measuring for host [${trimmedHostname}]`);
+      // TODO
     }
     this.setState(prevState => ({
       measuring: !prevState.measuring
@@ -31,7 +67,12 @@ class PlayMetricsButton extends React.Component<PlayMetricsButtonProps, PlayMetr
 
   render() {
     return (
-      <button onClick={this.handleClick}>{this.state.measuring ? "Stop" : "Start"}</button>
+      <div className="MetricsControlPanel">
+         <PlayMetricsButton 
+            measuring={this.state.measuring} onClick={this.handlePlayMetricsButtonClick}/>
+         <TextField value={this.state.agentHostname} 
+            onChange={this.handleTextChange} disabled={this.state.measuring}/>
+      </div>
     );
   }
 }
@@ -40,24 +81,12 @@ class App extends React.Component {
   render() {
     return (
       <div className="App">
-        <h2 className="Basic-text">Temperature</h2>
-        <hr/>
-          <PlayMetricsButton/>
+        <Typography variant="h2" component="h2">Temperature</Typography>
+        <Divider/>
+        <MetricsControlPanel/>
       </div>
     );
   }
 }
 
 export default App;
-
-/**
-
-TODO add text input to enter server address:
-
-- add a parent component with children PlayMetricsButton and a text input. Use flex to render right
-
-<div style={{display: 'flex',  justifyContent:'left', alignItems: 'left'}}>
-
-- lift the state to that parent component, as the button needs the text input to run
-
-*/

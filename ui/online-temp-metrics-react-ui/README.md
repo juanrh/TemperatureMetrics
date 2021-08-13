@@ -11,6 +11,9 @@ npx create-react-app online-temp-metrics-react-ui --template typescript
 __TL;DR__:
 
 ```bash
+# download dependencies: only needed when changing dependencies
+npm install
+
 # release build
 CI=true npm test && CI=true npm run build
 

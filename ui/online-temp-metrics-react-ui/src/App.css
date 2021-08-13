@@ -4,6 +4,13 @@
   padding-right: 1%;
 }
 
-.Basic-text {
-  color: #2C3539
+.Basic-button {
+  margin-right: 10px;
+}
+
+.MetricsControlPanel {
+  display: flex;
+  flex-direction: row wrap;
+  justify-content: flex-start;
+  margin-top: 15px;
 }
