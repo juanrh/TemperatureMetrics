@@ -63,7 +63,11 @@ class MetricsControlPanel extends React.Component<MetricsControlPanelProps, Metr
           l: 20, //left margin
           r: 20, //right margin
           b: 20 //bottom margin
-        }
+        },
+        // We also need in the <Plot>:
+        // - style={{width:"100%"}}  for the plot to resize to 100%
+        // - useResizeHandler={true} for the plot to readjust when the window size changes
+        autosize: true
       },
       plotRevision: 0
     };
@@ -144,7 +148,6 @@ class MetricsControlPanel extends React.Component<MetricsControlPanelProps, Metr
 
 
 // TODO 
-// - Fit to screen responsively
 // - Plot with date as x: note `export type Datum = string | number | Date | null;` so it
 // might be trivial
 // - Add updated dependency that __pushes__ updates: consider setInterval but think whether
@@ -162,6 +165,8 @@ class MetricsPlot extends React.Component<MetricsPlotProps, MetricsPlotState> {
       <Plot data={[this.props.plotData]}
             layout={this.props.plotLayout}
             revision={this.props.plotRevision}
+            useResizeHandler={true}
+            style={{width:"100%"}}
       />
     );
   }

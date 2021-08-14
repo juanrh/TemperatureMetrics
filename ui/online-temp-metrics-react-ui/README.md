@@ -152,4 +152,5 @@ References:
     }
     ```
 
+  - [How to use the layout.autosize?](https://github.com/plotly/react-plotly.js/issues/76)
   - [JavaScript heap out of memory error with the quickstart Plot example](https://github.com/plotly/react-plotly.js/issues/135): I fixed this by updating to Node.js v14.17.5.
