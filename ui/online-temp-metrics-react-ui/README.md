@@ -6,6 +6,8 @@ This project was bootstrapped with [Create React App](https://github.com/faceboo
 npx create-react-app online-temp-metrics-react-ui --template typescript
 ```
 
+Tested with __node 14__.
+
 ## Available Scripts
 
 __TL;DR__:
@@ -75,3 +77,79 @@ See [What does this “react-scripts eject” command do?](https://stackoverflow
 You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
 
 To learn React, check out the [React documentation](https://reactjs.org/).
+
+## Design 
+
+Use a React app that fetches the temperature metrics data from a gGPRC service running on the RPI host, using streaming RPC. Plot the data dynamically using plotly.
+
+References:
+
+- gRPC
+  - [gRPC-web tutorial](https://grpc.io/docs/platforms/web/basics/)
+  - [gRPC-web TypeScript Support](https://github.com/grpc/grpc-web#typescript-support)
+- Plotly
+  - Plotly has [MIT license](https://plotly.com/python/is-plotly-free/) and can be used offline
+  - [Plotly vs Chart.js](https://stackshare.io/stackups/js-chart-vs-plotly-js): Plotly has feature parity with matplotlib, it renders faster, and can be used from other languages like Python.
+  - [React Plotly.js in JavaScript](https://plotly.com/javascript/react/)
+  - [Create JavaScript Real-Time Chart with Plotly.js](https://redstapler.co/javascript-realtime-chart-plotly/). To "follow the plot" here instead of `Plotly.relayout` we can just update `this.state.plotLayout.xaxis` in our plot component, so react-plotly integration takes care of updating it.
+  - [Plot.ly + React and dynamic data](https://medium.com/@jmmccota/plotly-react-and-dynamic-data-d40c7292dbfb). Bottom line, as seen in [Refreshing the Plot](https://github.com/plotly/react-plotly.js/blob/master/README.md#refreshing-the-plot) we have to update the `revision` prop and also the `layout.datarevision` or change the (javascript) identify of the data variable to force a refresh. E.g.
+
+    ```ts
+    interface FooProps {}
+    interface FooState {
+        data: Partial<Plotly.ScatterData>,
+        layout: Partial<Plotly.Layout>,
+        revision: number
+    }
+
+    class Foo extends React.Component<FooProps, FooState> {
+        constructor(props: FooProps) {
+            super(props);
+            this.state = {
+                data: {
+                    x: [0, 1, 2],
+                    y: [2, 0, 1],
+                    mode: 'lines+markers',
+                    name: "temperature"
+                }, 
+                layout: {
+                    datarevision: 0,
+                    margin: {
+                        t: 20, //top margin
+                        l: 20, //left margin
+                        r: 20, //right margin
+                        b: 20 //bottom margin
+                    }
+                },
+                revision: 0
+            }
+            this.increaseGraphic = this.increaseGraphic.bind(this);
+        }
+
+        componentDidMount() {
+            setInterval(this.increaseGraphic, 1000);
+        } 
+
+        increaseGraphic = () => {
+            console.log("increaseGraphic");
+            const data = this.state.data;
+
+            (data.x as Plotly.Datum[]).push(this.state.revision+3);
+            (data.y as Plotly.Datum[]).push(Math.random() * 10);
+    
+            this.setState({ revision: this.state.revision + 1 });
+            this.state.layout.datarevision = this.state.revision + 1;
+        }
+
+        render() {
+            return (
+                <Plot data={[this.state.data]}
+                      layout={this.state.layout}
+                      revision={this.state.revision}
+                />
+            );
+        }
+    }
+    ```
+
+  - [JavaScript heap out of memory error with the quickstart Plot example](https://github.com/plotly/react-plotly.js/issues/135): I fixed this by updating to Node.js v14.17.5.
