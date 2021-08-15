@@ -78,15 +78,35 @@ class MetricsControlPanel extends React.Component<MetricsControlPanelProps, Metr
   }
 
   private pushDatum(x: Date, y: Plotly.Datum) {
-    const data = this.state.plotData;
-    (data.x as Plotly.Datum[]).push(x);
-    (data.y as Plotly.Datum[]).push(y);
-    this.setState(function (state) {
-      const plotLayout = state.plotLayout;
+    const plotWindowSize = this.plotWindowSize;
+    this.setState(function(state) {
+      // add data
+      const plotData = Object.assign({}, state.plotData);
+      const xs = ((plotData.x) as Plotly.Datum[]).concat([x]);
+      const ys = (plotData.y as Plotly.Datum[]).concat([y]);
+      plotData.x = xs;
+      plotData.y = ys;
+
+      const plotLayout = Object.assign({}, state.plotLayout);
+
+      // follow the plot
+      //   there is at least 1 element because we just added it
+      const startDate = new Date(xs[Math.max(0, xs.length - plotWindowSize)] as Date);
+      const endDate = new Date(xs[xs.length-1] as Date);
+      startDate.setTime(startDate.getTime() - MetricsControlPanel.WINDOW_PADDING_MILLIS);
+      endDate.setTime(endDate.getTime() + MetricsControlPanel.WINDOW_PADDING_MILLIS);
+      plotLayout.xaxis = {
+        range: [startDate, endDate]
+      };
+
+      // trigger update
       plotLayout.datarevision = state.plotRevision + 1;
+      const plotRevision = state.plotRevision + 1;
+
       return { 
-        plotRevision: state.plotRevision + 1,
-        plotLayout: plotLayout
+        plotData: plotData,
+        plotLayout: plotLayout,
+        plotRevision: plotRevision
       };
     });
   }
@@ -111,25 +131,6 @@ class MetricsControlPanel extends React.Component<MetricsControlPanelProps, Metr
     // FIXME
       // add a new point to the right with random y
     this.pushDatum(new Date(), Math.random() * 10);
-      // follow the plot
-    const plotWindowSize = this.plotWindowSize;
-    this.setState(function(state) {
-      const plotLayout = state.plotLayout;
-      const xs = (state.plotData.x || []) as Plotly.Datum[];
-      if (xs.length > 0) {
-        const startDate = new Date(xs[Math.max(0, xs.length - plotWindowSize)] as Date);
-        const endDate = new Date(xs[xs.length-1] as Date);
-        startDate.setTime(startDate.getTime() - MetricsControlPanel.WINDOW_PADDING_MILLIS);
-        endDate.setTime(endDate.getTime() + MetricsControlPanel.WINDOW_PADDING_MILLIS);
-        plotLayout.xaxis = {
-          range: [startDate, endDate]
-        };
-      }
-      
-      return {
-        plotLayout: plotLayout
-      };
-    });
   }
 
   render() {
