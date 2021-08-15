@@ -33,9 +33,11 @@ class PlayMetricsButton extends React.Component<PlayMetricsButtonProps, PlayMetr
 }
 
 interface MetricsControlPanelProps {
-  // size in data points of the sliding window we move
-  // right as new data arrives
-  plotWindowSize?: number
+  /** Size in data points of the sliding window we move
+   * right as new data arrives */ 
+  plotWindowSize?: number,
+  /** We only keep in the plot the latest dataBufferSize received */
+  dataBufferSize?: number
 }
 // Extending instead of nesting because react doesn't really
 // support nested state properties https://stackoverflow.com/questions/43040721/how-to-update-nested-state-properties-in-react
@@ -44,11 +46,22 @@ interface MetricsControlPanelState extends MetricsPlotProps {
   measuring: boolean
 }
 class MetricsControlPanel extends React.Component<MetricsControlPanelProps, MetricsControlPanelState> {
-  private static readonly WINDOW_PADDING_MILLIS = 50; 
-  readonly plotWindowSize: number;
+  /** Default for props.plotWindowSize  */
+  static readonly DEFAULT_PLOT_WINDOW_SIZE = 5;
+  /** Default for props.dataBufferSize */
+  static readonly DEFAULT_DATA_BUFFER_SIZE = 10;
+  private static readonly WINDOW_PADDING_MILLIS = 50;
+
+  private getPlotWindowSize(): number {
+    return this.props?.plotWindowSize || MetricsControlPanel.DEFAULT_PLOT_WINDOW_SIZE;
+  }
+
+  private getDataBufferSize(): number {
+    return this.props?.dataBufferSize || MetricsControlPanel.DEFAULT_DATA_BUFFER_SIZE;
+  }
+
   constructor(props: MetricsControlPanelProps) {
     super(props);
-    this.plotWindowSize = this.props?.plotWindowSize || 5 ;
     this.state = {
       agentHostname: "hostname",
       measuring: false,
@@ -78,12 +91,17 @@ class MetricsControlPanel extends React.Component<MetricsControlPanelProps, Metr
   }
 
   private pushDatum(x: Date, y: Plotly.Datum) {
-    const plotWindowSize = this.plotWindowSize;
+    const plotWindowSize = this.getPlotWindowSize();
+    const dataBufferSize = this.getDataBufferSize();
     this.setState(function(state) {
       // add data
       const plotData = Object.assign({}, state.plotData);
-      const xs = ((plotData.x) as Plotly.Datum[]).concat([x]);
-      const ys = (plotData.y as Plotly.Datum[]).concat([y]);
+      let xs = (plotData.x as Plotly.Datum[]).concat([x]);
+      let ys = (plotData.y as Plotly.Datum[]).concat([y]);
+      if (xs.length > dataBufferSize) {
+         xs = xs.slice(1);
+         ys = ys.slice(1);
+      }
       plotData.x = xs;
       plotData.y = ys;
 
@@ -158,7 +176,6 @@ class MetricsControlPanel extends React.Component<MetricsControlPanelProps, Metr
 // TODO 
 // - Add updated dependency that __pushes__ updates: consider setInterval but think whether
 // it is fully background/concurrent or not, we need RPC
-// - Delete old data
 interface MetricsPlotProps {
   plotData: Partial<Plotly.ScatterData>,
   plotLayout: Partial<Plotly.Layout>,
