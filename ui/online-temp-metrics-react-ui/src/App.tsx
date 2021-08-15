@@ -44,6 +44,7 @@ interface MetricsControlPanelState extends MetricsPlotProps {
   measuring: boolean
 }
 class MetricsControlPanel extends React.Component<MetricsControlPanelProps, MetricsControlPanelState> {
+  private static readonly WINDOW_PADDING_MILLIS = 50; 
   readonly plotWindowSize: number;
   constructor(props: MetricsControlPanelProps) {
     super(props);
@@ -76,7 +77,7 @@ class MetricsControlPanel extends React.Component<MetricsControlPanelProps, Metr
     this.pushDatum = this.pushDatum.bind(this);
   }
 
-  private pushDatum(x: Plotly.Datum, y: Plotly.Datum) {
+  private pushDatum(x: Date, y: Plotly.Datum) {
     const data = this.state.plotData;
     (data.x as Plotly.Datum[]).push(x);
     (data.y as Plotly.Datum[]).push(y);
@@ -109,16 +110,22 @@ class MetricsControlPanel extends React.Component<MetricsControlPanelProps, Metr
 
     // FIXME
       // add a new point to the right with random y
-    this.pushDatum(this.state.plotRevision, Math.random() * 10);
+    this.pushDatum(new Date(), Math.random() * 10);
       // follow the plot
     const plotWindowSize = this.plotWindowSize;
-    this.setState(function (state) {
+    this.setState(function(state) {
       const plotLayout = state.plotLayout;
-      if (state.plotData.x?.length || 0 > plotWindowSize) { 
+      const xs = (state.plotData.x || []) as Plotly.Datum[];
+      if (xs.length > 0) {
+        const startDate = new Date(xs[Math.max(0, xs.length - plotWindowSize)] as Date);
+        const endDate = new Date(xs[xs.length-1] as Date);
+        startDate.setTime(startDate.getTime() - MetricsControlPanel.WINDOW_PADDING_MILLIS);
+        endDate.setTime(endDate.getTime() + MetricsControlPanel.WINDOW_PADDING_MILLIS);
         plotLayout.xaxis = {
-          range: [state.plotRevision - plotWindowSize, state.plotRevision]
-        }
+          range: [startDate, endDate]
+        };
       }
+      
       return {
         plotLayout: plotLayout
       };
@@ -148,8 +155,6 @@ class MetricsControlPanel extends React.Component<MetricsControlPanelProps, Metr
 
 
 // TODO 
-// - Plot with date as x: note `export type Datum = string | number | Date | null;` so it
-// might be trivial
 // - Add updated dependency that __pushes__ updates: consider setInterval but think whether
 // it is fully background/concurrent or not, we need RPC
 // - Delete old data
