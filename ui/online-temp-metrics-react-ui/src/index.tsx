@@ -3,10 +3,15 @@ import ReactDOM from 'react-dom';
 import './index.css';
 import App from './App';
 import reportWebVitals from './reportWebVitals';
+import { FakeMetricsSource } from './MetricSources';
 
 ReactDOM.render(
   <React.StrictMode>
-    <App />
+    <App 
+      metricsSource={new FakeMetricsSource()}
+      plotWindowSize={30}
+      dataBufferSize={100}
+    />
   </React.StrictMode>,
   document.getElementById('root')
 );

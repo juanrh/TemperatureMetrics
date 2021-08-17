@@ -2,6 +2,7 @@ import React from 'react';
 import './App.css';
 import { Button, Divider, TextField, Typography } from '@material-ui/core';
 import Plot from 'react-plotly.js';
+import { MetricsSink, MetricsSource } from './MetricSources';
 
 interface PlayMetricsButtonProps {
   measuring: boolean,
@@ -38,6 +39,8 @@ interface MetricsControlPanelProps {
   plotWindowSize?: number,
   /** We only keep in the plot the latest dataBufferSize received */
   dataBufferSize?: number
+  /** Where we are getting the data from */
+  metricsSource: MetricsSource
 }
 // Extending instead of nesting because react doesn't really
 // support nested state properties https://stackoverflow.com/questions/43040721/how-to-update-nested-state-properties-in-react
@@ -45,7 +48,8 @@ interface MetricsControlPanelState extends MetricsPlotProps {
   agentHostname: string,
   measuring: boolean
 }
-class MetricsControlPanel extends React.Component<MetricsControlPanelProps, MetricsControlPanelState> {
+class MetricsControlPanel extends React.Component<MetricsControlPanelProps, MetricsControlPanelState> 
+                          implements MetricsSink {
   /** Default for props.plotWindowSize  */
   static readonly DEFAULT_PLOT_WINDOW_SIZE = 5;
   /** Default for props.dataBufferSize */
@@ -90,7 +94,7 @@ class MetricsControlPanel extends React.Component<MetricsControlPanelProps, Metr
     this.pushDatum = this.pushDatum.bind(this);
   }
 
-  private pushDatum(x: Date, y: Plotly.Datum) {
+  pushDatum(x: Date, y: Plotly.Datum) {
     const plotWindowSize = this.getPlotWindowSize();
     const dataBufferSize = this.getDataBufferSize();
     this.setState(function(state) {
@@ -129,6 +133,18 @@ class MetricsControlPanel extends React.Component<MetricsControlPanelProps, Metr
     });
   }
 
+  reportError(error: Error) {
+    alert(`Error fetching data: ${error}`);
+    this.stopMeasuring();
+  }
+
+  private stopMeasuring() {
+    this.props.metricsSource.stop();
+    this.setState({
+      measuring: false
+    });
+  }
+
   handleTextChange(event: React.ChangeEvent<HTMLInputElement>) {
     this.setState({agentHostname: event.target.value});
   }
@@ -137,18 +153,14 @@ class MetricsControlPanel extends React.Component<MetricsControlPanelProps, Metr
     const trimmedHostname = this.state.agentHostname.trim();
     if (this.state.measuring) {
       console.log(`Stop measuring for host [${trimmedHostname}]`);
-      // TODO
+      this.props.metricsSource.stop();
     } else {
       console.log(`Start measuring for host [${trimmedHostname}]`);
-      // TODO
+      this.props.metricsSource.start(this);
     }
     this.setState(prevState => ({
       measuring: !prevState.measuring
     }));
-
-    // FIXME
-      // add a new point to the right with random y
-    this.pushDatum(new Date(), Math.random() * 10);
   }
 
   render() {
@@ -172,10 +184,6 @@ class MetricsControlPanel extends React.Component<MetricsControlPanelProps, Metr
   }
 }
 
-
-// TODO 
-// - Add updated dependency that __pushes__ updates: consider setInterval but think whether
-// it is fully background/concurrent or not, we need RPC
 interface MetricsPlotProps {
   plotData: Partial<Plotly.ScatterData>,
   plotLayout: Partial<Plotly.Layout>,
@@ -195,13 +203,19 @@ class MetricsPlot extends React.Component<MetricsPlotProps, MetricsPlotState> {
   }
 }
 
-class App extends React.Component {
+interface AppProps extends MetricsControlPanelProps {}
+interface AppState {}
+class App extends React.Component<AppProps, AppState> {
   render() {
     return (
       <div className="App">
         <Typography variant="h2" component="h2">Temperature</Typography>
         <Divider/>
-        <MetricsControlPanel/>
+        <MetricsControlPanel 
+          metricsSource={this.props.metricsSource}
+          plotWindowSize={this.props.plotWindowSize}
+          dataBufferSize={this.props.dataBufferSize}
+          />
       </div>
     );
   }
