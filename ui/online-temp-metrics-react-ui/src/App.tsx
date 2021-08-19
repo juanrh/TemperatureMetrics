@@ -135,13 +135,23 @@ class MetricsControlPanel extends React.Component<MetricsControlPanelProps, Metr
 
   reportError(error: Error) {
     alert(`Error fetching data: ${error}`);
-    this.stopMeasuring();
+    this.setMeasuring(false);
   }
 
-  private stopMeasuring() {
-    this.props.metricsSource.stop();
+  private setMeasuring(startMeasuring: boolean) {
+    const trimmedHostname = this.state.agentHostname.trim();
+    if (startMeasuring) {
+      console.log(`Start measuring for host [${trimmedHostname}]`);
+      this.props.metricsSource.start({hostname: trimmedHostname}, this);
+    } else {
+      console.log(`Stop measuring for host [${trimmedHostname}]`);
+      this.props.metricsSource.stop().catch((error) => {
+        alert(`Error stopping data source: ${error}`)
+      });
+    }
+
     this.setState({
-      measuring: false
+      measuring: startMeasuring
     });
   }
 
@@ -150,17 +160,7 @@ class MetricsControlPanel extends React.Component<MetricsControlPanelProps, Metr
   }
 
   handlePlayMetricsButtonClick() {
-    const trimmedHostname = this.state.agentHostname.trim();
-    if (this.state.measuring) {
-      console.log(`Stop measuring for host [${trimmedHostname}]`);
-      this.props.metricsSource.stop();
-    } else {
-      console.log(`Start measuring for host [${trimmedHostname}]`);
-      this.props.metricsSource.start(this);
-    }
-    this.setState(prevState => ({
-      measuring: !prevState.measuring
-    }));
+    this.setMeasuring(!this.state.measuring);
   }
 
   render() {
