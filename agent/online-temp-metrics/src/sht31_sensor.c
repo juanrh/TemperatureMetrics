@@ -24,8 +24,37 @@
  * This looks like a hardware limitation. 
 */
 
+/*
+* Code from https://github.com/sfeakes/Adafruit-sht31-for-PI/blob/master/sht31-d.c
+* 
+* CRC-8 formula from page 14 of SHT spec pdf
+*
+* Test data 0xBE, 0xEF should yield 0x92
+*
+* Initialization data 0xFF
+* Polynomial 0x31 (x8 + x5 +x4 +1)
+* Final XOR 0x00
+*/
+char crc8(const char *data, int len)
+{
+  const char POLYNOMIAL = 0x31;
+  char crc = 0xFF;
+  int j;
+  int i;
+  
+  for (j = len; j; --j ) {
+    crc ^= *data++;
+
+    for ( i = 8; i; --i ) {
+      crc = ( crc & 0x80 )
+            ? (crc << 1) ^ POLYNOMIAL
+            : (crc << 1);
+    }
+  }
+  return crc;
+}
+
 // TODO
-// CRC
 // Better error handling: use return code constatns, also do in wrapping C++ code
 int sht31_measure(struct sht31_measurement* measurement)
 {
@@ -61,19 +90,23 @@ int sht31_measure(struct sht31_measurement* measurement)
 	{
 		printf("Error : Input/output Error \n");
 		close(file);
+		return 3;
 	}
-	else
+	close(file);
+	if ( data[2] != crc8(data, 2) || data[5] != crc8(data+3, 2)) 
 	{
-		// TODO CRC
-		// Convert the data
-		double cTemp = (((data[0] * 256) + data[1]) * 175.0) / 65535.0  - 45.0;
-		// double fTemp = (((data[0] * 256) + data[1]) * 315.0) / 65535.0 - 49.0;
-		double humidity = (((data[3] * 256) + data[4])) * 100.0 / 65535.0;
- 
-		close(file);
-		measurement->humidity = humidity;
-		measurement->temperature = cTemp;
+		printf("CRC check failure \n");
+		return 4;
 	}
+
+	// Convert the data
+	double cTemp = (((data[0] * 256) + data[1]) * 175.0) / 65535.0  - 45.0;
+	// double fTemp = (((data[0] * 256) + data[1]) * 315.0) / 65535.0 - 49.0;
+	double humidity = (((data[3] * 256) + data[4])) * 100.0 / 65535.0;
+ 
+	
+	measurement->humidity = humidity;
+	measurement->temperature = cTemp;
 
 	return 0;
 }
