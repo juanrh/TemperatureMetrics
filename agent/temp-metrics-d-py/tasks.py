@@ -24,7 +24,7 @@ _script_dir = os.path.dirname(__file__)
 
 def read_conf(path):
     """Read a configuration file"""
-    with open(path, 'r') as in_f:
+    with open(path, 'r', encoding='utf8') as in_f:
         return json.load(in_f)
 
 @contextmanager
@@ -154,7 +154,7 @@ def deploy(c, conf):
             user=config['agent']['user']
         )
         local_systemd_conf = os.path.join(_script_dir, 'build', service_name)
-        with open(local_systemd_conf, 'w') as out_f:
+        with open(local_systemd_conf, 'w', encoding='utf8') as out_f:
             out_f.write(service_file_contents)
         rc.put(local_systemd_conf, temp_agent_root)
         systemd_conf = f"/etc/systemd/system/{service_name}.service"

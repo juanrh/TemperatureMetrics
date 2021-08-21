@@ -16,7 +16,7 @@ def is_rpi():
     """Detect whether or not this code is running on a Raspberry Pi"""
     model_filename = '/sys/firmware/devicetree/base/model'
     if os.path.isfile(model_filename):
-        with open(model_filename, 'r') as in_f:
+        with open(model_filename, 'r', encoding='utf8') as in_f:
             line = in_f.readline()
         return line.startswith('Raspberry Pi')
     return False
