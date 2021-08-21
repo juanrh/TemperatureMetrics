@@ -21,8 +21,12 @@ file(GLOB all_SRC
      "src/*.cpp"
 )
 
-add_executable(main ${all_SRC} )
+add_executable(main ${all_SRC} "src/sht31_sensor.c")
 
 # To enable threads
 # https://stackoverflow.com/questions/5395309/how-do-i-force-cmake-to-include-pthread-option-during-compilation
 # target_link_libraries( main ${CMAKE_THREAD_LIBS_INIT} )
+
+# To use libi2c. Install with conan following https://docs.conan.io/en/1.36/reference/conanfile/methods.html#system-requirements
+# https://stackoverflow.com/questions/63890499/how-to-link-dynamic-library-li2c-with-cmake-undefined-reference-to-i2c-smb
+# target_link_libraries(main i2c)
