@@ -54,8 +54,6 @@ char crc8(const char *data, int len)
   return crc;
 }
 
-// TODO
-// Better error handling: use return code constatns, also do in wrapping C++ code
 int sht31_measure(struct sht31_measurement* measurement)
 {
 	// Create I2C bus

@@ -5,7 +5,10 @@ class HelloConan(ConanFile):
     version = "0.1"
     settings = "os", "compiler", "build_type", "arch"
     generators = "cmake"
-    exports_sources = "*"
+    # To prevent "ERROR: The file is a broken symlink" for python venv
+    # we have to exclude it from the sources as documented in 
+    # https://docs.conan.io/en/latest/reference/conanfile/attributes.html#exports-sources
+    exports_sources = "*", "!.venv/*"
 
     def build(self):
         cmake = CMake(self)
