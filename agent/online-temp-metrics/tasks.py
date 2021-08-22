@@ -62,10 +62,23 @@ def smoke_test(c, host):
     print('Running smoke test')
     rc.run(f'/home/pi/{os.path.basename(_cross_binary)}')
 
+
+@task
+def analyze(c):
+    """Run all static analysis tools"""
+    with print_title("Checking for style errors with cpplint"):
+        # https://github.com/cpplint/cpplint
+        # https://google.github.io/styleguide/cppguide.html#cpplint
+        # See error descriptions in https://google.github.io/styleguide/cppguide.html
+        c.run('''cpplint \
+    --linelength=105 \
+    --counting=detailed \
+    $(find src include -name *.h -or -name *.c -or -name *.cpp)''')
+
+
 @task
 def release(c):
-    """Run all tests and all code analysis tools"""
-    pass # TODO
-
-
-# TODO doc in readme
+    """Build, run all tests and all static analysis tools"""
+    build(c)
+    cross_build(c)
+    analyze(c)

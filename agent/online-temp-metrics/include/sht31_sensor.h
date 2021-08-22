@@ -1,5 +1,7 @@
-#ifndef SHT31_SENSOR_H_
-#define SHT31_SENSOR_H_
+// Copyright (c)  2021 Juan Rodriguez Hortala
+// Apache License Version 2.0, see https://github.com/juanrh/TemperatureMetrics/blob/master/LICENSE
+#ifndef AGENT_ONLINE_TEMP_METRICS_INCLUDE_SHT31_SENSOR_H_
+#define AGENT_ONLINE_TEMP_METRICS_INCLUDE_SHT31_SENSOR_H_
 
 #define SHT31_STATUS_OK 0
 #define SHT31_STATUS_OPEN_BUS_FAILURE 1
@@ -8,16 +10,14 @@
 #define SHT31_STATUS_SEND_MEASURE_CMD_IO_ERROR 4
 #define SHT31_STATUS_CRC_CHECK_FAILURE 5
 
-struct sht31_measurement 
-{
+struct sht31_measurement {
     // Celsius degrees
     double temperature;
     double humidity;
 };
 
 /** State required for getting measurements from the sensor */
-struct sht31_sensor
-{
+struct sht31_sensor {
     int file;
 };
 
@@ -33,4 +33,4 @@ int sht31_measure(const struct sht31_sensor* sensor,
                   struct sht31_measurement* measurement);
 int sht31_close(const struct sht31_sensor* sensor);
 
-#endif
+#endif  // AGENT_ONLINE_TEMP_METRICS_INCLUDE_SHT31_SENSOR_H_

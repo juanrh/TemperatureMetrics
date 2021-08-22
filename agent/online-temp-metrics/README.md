@@ -37,10 +37,11 @@ or alternatively use build scripts:
   $ inv -l
   Available tasks:
 
+    analyze             Run all static analysis tools
     build               Build the code for this architecture
     cross-build         Build the code for RPI 3B+
     cross-build-shell   Open a shell on a container for cross build
-    release             Run all tests and all code analysis tools
+    release             Build, run all tests and all static analysis tools
     smoke-test          Run a measurement on a RPI 3B+
   ```
 
