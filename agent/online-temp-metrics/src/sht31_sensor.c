@@ -35,9 +35,10 @@
 * Polynomial 0x31 (x8 + x5 +x4 +1)
 * Final XOR 0x00
 */
-char crc8(const char *data, int len)
+
+static const char CRC_POLYNOMIAL = 0x31;
+char sht31_crc(const char *data, int len)
 {
-  const char POLYNOMIAL = 0x31;
   char crc = 0xFF;
   int j;
   int i;
@@ -47,64 +48,80 @@ char crc8(const char *data, int len)
 
     for ( i = 8; i; --i ) {
       crc = ( crc & 0x80 )
-            ? (crc << 1) ^ POLYNOMIAL
+            ? (crc << 1) ^ CRC_POLYNOMIAL
             : (crc << 1);
     }
   }
   return crc;
 }
 
-int sht31_measure(struct sht31_measurement* measurement)
-{
+static const unsigned long int SENSOR_ADDRESS = 0x44;
+#define SEND_MEASURE_CMD_SIZE 2
+#define MEASURE_MSG_BYTE_SIZE 6
+// High repeatability measurement command
+// Command msb, command lsb(0x2C, 0x06)
+// msb = most significant byte, lsb = least significant byte
+static const char SEND_MEASURE_CMD_CONFIG[SEND_MEASURE_CMD_SIZE] = {
+	// command most significant byte
+	0x2C,
+	// command least significant byte
+	0x06
+};
+// this is too fast and hangs the sensor after some measurements
+// usleep(64000); // microsecs
+static const unsigned int MEASUREMENT_SLEEP_TIME_SECS = 1;	
+
+int sht31_open(const char* bus, struct sht31_sensor* sensor) {
 	// Create I2C bus
 	int file;
-	char *bus = "/dev/i2c-1";
+
 	if((file = open(bus, O_RDWR)) < 0) 
 	{
-		printf("Failed to open the bus. \n");
-		return 1;
+		return SHT31_STATUS_OPEN_BUS_FAILURE;
 	}
-	// Get I2C device, SHT31 I2C address is 0x44(68)
-	ioctl(file, I2C_SLAVE, 0x44);
- 
-	// Send high repeatability measurement command
-	// Command msb, command lsb(0x2C, 0x06)
-	char config[2] = {0};
-	config[0] = 0x2C;
-	config[1] = 0x06;
-	if (write(file, config, 2) < 0) 
+	ioctl(file, I2C_SLAVE, SENSOR_ADDRESS);
+
+	sensor->file = file;
+
+	return SHT31_STATUS_OK;
+}
+
+int sht31_measure(const struct sht31_sensor* sensor,
+                  struct sht31_measurement* measurement)
+{	
+	if (write(sensor->file, SEND_MEASURE_CMD_CONFIG, SEND_MEASURE_CMD_SIZE) < 0) 
 	{
-		printf("Failed to send write command. \n");
-		return 2;
+		return SHT31_STATUS_SEND_MEASURE_CMD_FAILURE;
 	};
-	sleep(1);
-	// this is too fast and hangs the sensor after some measurements
-	// usleep(64000); // microsecs
+	sleep(MEASUREMENT_SLEEP_TIME_SECS);
 
 	// Read 6 bytes of data
 	// temp msb, temp lsb, temp CRC, humidity msb, humidity lsb, humidity CRC
-	char data[6] = {0};
-	if(read(file, data, 6) != 6)
+	char data[MEASURE_MSG_BYTE_SIZE] = {0};
+	if(read(sensor->file, data, MEASURE_MSG_BYTE_SIZE) != MEASURE_MSG_BYTE_SIZE)
 	{
-		printf("Error : Input/output Error \n");
-		close(file);
-		return 3;
+		return SHT31_STATUS_SEND_MEASURE_CMD_IO_ERROR;
 	}
-	close(file);
-	if ( data[2] != crc8(data, 2) || data[5] != crc8(data+3, 2)) 
+	if (data[2] != sht31_crc(data, 2) || data[5] != sht31_crc(data+3, 2)) 
 	{
-		printf("CRC check failure \n");
-		return 4;
+		return SHT31_STATUS_CRC_CHECK_FAILURE;
 	}
 
 	// Convert the data
 	double cTemp = (((data[0] * 256) + data[1]) * 175.0) / 65535.0  - 45.0;
-	// double fTemp = (((data[0] * 256) + data[1]) * 315.0) / 65535.0 - 49.0;
 	double humidity = (((data[3] * 256) + data[4])) * 100.0 / 65535.0;
- 
-	
-	measurement->humidity = humidity;
 	measurement->temperature = cTemp;
+	measurement->humidity = humidity;
 
-	return 0;
+	return SHT31_STATUS_OK;
+}
+
+int sht31_close(const struct sht31_sensor* sensor)
+{
+	int close_status = close(sensor->file) ;
+	if (close_status != 0)
+	{
+		return SHT31_STATUS_CLOSE_BUS_FAILURE;
+	}
+	return SHT31_STATUS_OK;
 }

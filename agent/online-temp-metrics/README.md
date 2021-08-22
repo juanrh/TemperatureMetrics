@@ -59,4 +59,4 @@ TODO
 - gRPC service: consider spsc Boost queue to communicate sensor and service
 - connet with front
 - tests with mocks
-- code analysis: at least style/linter + asan/tsan 
+- code analysis: at least style, linter, asan, tsan

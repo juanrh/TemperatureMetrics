@@ -57,7 +57,9 @@ def smoke_test(c, host):
     - inv smoke-test --host temp-comedor
     """
     rc = Connection(host)
+    print('Copying artifacts')
     rc.put(_cross_binary, '/home/pi')
+    print('Running smoke test')
     rc.run(f'/home/pi/{os.path.basename(_cross_binary)}')
 
 @task
