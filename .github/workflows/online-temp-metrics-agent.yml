@@ -23,4 +23,4 @@ jobs:
           shell: bash
           # NOTE: new line (even with ' \') in options leads to "docker: invalid reference format"
           options: -e ONLINE_TEMP_METRICS_SRC_DIR="${{ github.workspace }}/agent/online-temp-metrics" -v ${{ github.workspace }}/agent/online-temp-metrics:/home/conan/project -v /var/run/docker.sock:/var/run/docker.sock
-          run: inv release --extra-linter-options --filter=-build/header_guard
+          run: pwd && ls -al && inv release --extra-linter-options --filter=-build/header_guard
