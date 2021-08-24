@@ -4,6 +4,7 @@ on: [push]
 
 jobs:
   build:
+
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -11,11 +12,15 @@ jobs:
         working-directory: agent/online-temp-metrics
     steps:
       - uses: actions/checkout@v2
-      # https://github.com/docker/setup-buildx-action, setup docker
-      - name: Set up Docker Buildx
-        id: buildx
-        uses: docker/setup-buildx-action@v1
-      - name: Release checks
-        run: |
-          pip3 install -r ci/requirements.txt
-          inv ci-build
+      # https://github.com/marketplace/actions/docker-run-action
+      - name: Release build
+        uses: addnab/docker-run-action@v3
+        with:
+          image: juanrh/online-temp-metrics-ci
+          shell: bash
+          options: | 
+            -e ONLINE_TEMP_METRICS_SRC_DIR=${{ github.workspace }} \
+            -v ${{ github.workspace }}:/home/conan/project \
+            -v /var/run/docker.sock:/var/run/docker.sock
+          run: |
+            inv release --extra-linter-options --filter=-build/header_guard

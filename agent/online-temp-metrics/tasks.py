@@ -63,7 +63,7 @@ def ci_build(c):
         # Disable 'build/header_guard' on CI as it uses a different root path in the container
         ci_build_shell(c, cmd='inv release --extra-linter-options --filter=-build/header_guard')
 
-_ci_build_image_name = 'online-temp-metrics-ci-container'
+_ci_build_image_name = 'online-temp-metrics-ci'
 @task
 def ci_build_shell(c, cmd=''):
     """Open a shell in a container for CI builds"""
@@ -75,6 +75,17 @@ def ci_build_shell(c, cmd=''):
   -v /var/run/docker.sock:/var/run/docker.sock \
   --rm {_ci_build_image_name} /bin/bash {bash_args(cmd)}""",
           pty=True)
+
+_ci_build_image_repo = f"juanrh/{_ci_build_image_name}"
+@task
+def ci_build_image_publish(c):
+    """Publish the build image to DockerHub, so it is available
+    to Github actions.
+    This assumes the shell already logged with `docker login`"""
+    # ensure the image is built
+    ci_build_shell(c, 'ls')
+    c.run(f"docker tag {_ci_build_image_name} {_ci_build_image_repo}")
+    c.run(f"docker push {_ci_build_image_repo}")
 
 @task
 def smoke_test(c, host):
