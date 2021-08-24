@@ -5,11 +5,10 @@ on: [push]
 jobs:
   build:
     runs-on: ubuntu-latest
-  defaults:
-    run:
-      shell: bash
-      working-directory: agent/online-temp-metrics
-
+    defaults:
+      run:
+        shell: bash
+        working-directory: agent/online-temp-metrics
     steps:
       - uses: actions/checkout@v2
       # https://github.com/docker/setup-buildx-action, setup docker
