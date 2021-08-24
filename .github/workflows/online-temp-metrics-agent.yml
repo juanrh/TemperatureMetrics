@@ -11,6 +11,10 @@ jobs:
         shell: bash
     steps:
       - uses: actions/checkout@v2
+      # https://github.community/t/docker-action-cant-create-folder-in-runners-home-directory/17816/3
+      # https://stackoverflow.com/questions/57830375/github-actions-workflow-error-permission-denied
+      - name: Prepare output directories
+        run: sudo mkdir -p "${{ github.workspace }}/agent/online-temp-metrics/build" && sudo mkdir -p "${{ github.workspace }}/agent/online-temp-metrics/cross_build"
       # https://github.com/marketplace/actions/docker-run-action
       - name: Release build
         uses: addnab/docker-run-action@v3
