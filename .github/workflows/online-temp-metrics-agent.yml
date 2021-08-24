@@ -2,11 +2,21 @@ name: Online temperature metrics agent
 
 on: [push]
 
-runs:
-  using: 'docker'
-  image: 'Dockerfile'
-  steps:
-    - name: Release checks
-      working-directory: agent/online-temp-metrics
+jobs:
+  build:
+    runs-on: ubuntu-latest
+  defaults:
+    run:
       shell: bash
-      run: inv ci-build
+      working-directory: agent/online-temp-metrics
+
+    steps:
+      - uses: actions/checkout@v2
+      # https://github.com/docker/setup-buildx-action, setup docker
+      - name: Set up Docker Buildx
+        id: buildx
+        uses: docker/setup-buildx-action@v1
+      - name: Release checks
+        run: |
+          pip3 install -r ci/requirements.txt
+          inv ci-build
