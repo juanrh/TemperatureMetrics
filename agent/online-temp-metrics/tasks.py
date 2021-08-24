@@ -11,6 +11,11 @@ _script_dir = os.path.dirname(__file__)
 _build_dir = os.path.join(_script_dir, 'build')
 _cross_build_dir = os.path.join(_script_dir, 'cross_build')
 _cross_binary = os.path.join(_cross_build_dir, 'bin', 'main')
+_ci_dir = os.path.join(_script_dir, 'ci')
+# This env var should only be set on containers, so we mount the correct
+# host path when launching a new container from a container (docker in docker)
+_source_code_env_var = 'ONLINE_TEMP_METRICS_SRC_DIR'
+_source_code_dir = os.environ.get(_source_code_env_var, _script_dir)
 
 @contextmanager
 def print_title(message):
@@ -40,13 +45,36 @@ def cross_build(c):
     with print_title("Building code for RPI 3B+"):
         cross_build_shell(c, cmd='project/ci/do_cross_build.sh')
 
+def bash_args(cmd):
+    return '' if len(cmd) == 0 else f"-c '{cmd}'"
+
 @task
 def cross_build_shell(c, cmd=''):
     """Open a shell on a container for cross build"""
     c.run(f"mkdir -p {_cross_build_dir}")
-    bash_args = '' if len(cmd) == 0 else f"-c '{cmd}'"
     # `pty=True` for https://www.pyinvoke.org/faq.html#why-do-i-sometimes-see-err-stdin-is-not-a-tty
-    c.run(f"docker run -it -v{_script_dir}:/home/conan/project --rm conanio/gcc7-armv7 /bin/bash {bash_args}", pty=True)
+    c.run(f"docker run -it -v{_source_code_dir}:/home/conan/project --rm conanio/gcc7-armv7 /bin/bash {bash_args(cmd)}",
+          pty=True)
+
+@task
+def ci_build(c):
+    """Run the CI build locally in a Docker container"""
+    with print_title("Running CI build locally"):
+        # Disable 'build/header_guard' on CI as it uses a different root path in the container
+        ci_build_shell(c, cmd='inv release --extra-linter-options --filter=-build/header_guard')
+
+_ci_build_image_name = 'online-temp-metrics-ci-container'
+@task
+def ci_build_shell(c, cmd=''):
+    """Open a shell in a container for CI builds"""
+    with c.cd(_ci_dir):
+        c.run(f"docker build -t {_ci_build_image_name} .")
+    c.run(f"""docker run -it \
+  -e {_source_code_env_var}={_script_dir}\
+  -v{_script_dir}:/home/conan/project \
+  -v /var/run/docker.sock:/var/run/docker.sock \
+  --rm {_ci_build_image_name} /bin/bash {bash_args(cmd)}""",
+          pty=True)
 
 @task
 def smoke_test(c, host):
@@ -64,21 +92,22 @@ def smoke_test(c, host):
 
 
 @task
-def analyze(c):
+def analyze(c, extra_linter_options=''):
     """Run all static analysis tools"""
     with print_title("Checking for style errors with cpplint"):
         # https://github.com/cpplint/cpplint
         # https://google.github.io/styleguide/cppguide.html#cpplint
         # See error descriptions in https://google.github.io/styleguide/cppguide.html
-        c.run('''cpplint \
+        print(f"extra_linter_options = [{extra_linter_options}]")
+        c.run(f"""cpplint \
     --linelength=105 \
-    --counting=detailed \
-    $(find src include -name *.h -or -name *.c -or -name *.cpp)''')
+    --counting=detailed {extra_linter_options} \
+    $(find src include -name *.h -or -name *.c -or -name *.cpp)""")
 
 
 @task
-def release(c):
+def release(c, extra_linter_options=''):
     """Build, run all tests and all static analysis tools"""
     build(c)
     cross_build(c)
-    analyze(c)
+    analyze(c, extra_linter_options)

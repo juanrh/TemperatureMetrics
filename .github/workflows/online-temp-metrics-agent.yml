@@ -1,0 +1,12 @@
+name: Online temperature metrics agent
+
+on: [push]
+
+runs:
+  using: 'docker'
+  image: 'Dockerfile'
+  steps:
+    - name: Release checks
+      working-directory: agent/online-temp-metrics
+      shell: bash
+      run: inv ci-build
