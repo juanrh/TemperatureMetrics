@@ -22,5 +22,4 @@ jobs:
             -e ONLINE_TEMP_METRICS_SRC_DIR="${{ github.workspace }}" \
             -v "${{ github.workspace }}:/home/conan/project" \
             -v "/var/run/docker.sock:/var/run/docker.sock"
-          run: |
-            inv release --extra-linter-options --filter=-build/header_guard
+          run: inv release --extra-linter-options --filter=-build/header_guard
