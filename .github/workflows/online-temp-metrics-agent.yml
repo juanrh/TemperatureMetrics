@@ -16,7 +16,7 @@ jobs:
       - name: Release build
         uses: addnab/docker-run-action@v3
         with:
-          image: juanrh/online-temp-metrics-ci
+          image: juanrh/online-temp-metrics-ci:latest
           shell: bash
           options: | 
             -e ONLINE_TEMP_METRICS_SRC_DIR="${{ github.workspace }}" \
