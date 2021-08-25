@@ -119,7 +119,9 @@ def analyze(c, extra_linter_options=''):
     --linelength=105 \
     --counting=detailed {extra_linter_options} \
     $(find src include -name *.h -or -name *.c -or -name *.cpp)""")
-
+    with print_title("Runnin Cppcheck static code analyzer"):
+        # http://cppcheck.sourceforge.net/
+        c.run('cppcheck --check-config --enable=all --error-exitcode=1  --suppress=missingIncludeSystem -I include/ src/')
 
 @task
 def release(c, extra_linter_options=''):

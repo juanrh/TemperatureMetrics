@@ -10,4 +10,5 @@ RUN sudo apt-key fingerprint 0EBFCD88
 RUN sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu zesty stable"
 RUN sudo apt-get update
 RUN sudo apt-get install -y docker-ce
+RUN sudo apt-get install -y cppcheck
 WORKDIR /home/conan/project

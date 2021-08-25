@@ -37,12 +37,15 @@ or alternatively use build scripts:
   $ inv -l
   Available tasks:
 
-    analyze             Run all static analysis tools
-    build               Build the code for this architecture
-    cross-build         Build the code for RPI 3B+
-    cross-build-shell   Open a shell on a container for cross build
-    release             Build, run all tests and all static analysis tools
-    smoke-test          Run a measurement on a RPI 3B+
+    analyze                  Run all static analysis tools
+    build                    Build the code for this architecture
+    ci-build                 Run the CI build locally in a Docker container
+    ci-build-image-publish   Publish the build image to DockerHub, so it is available
+    ci-build-shell           Open a shell in a container for CI builds
+    cross-build              Build the code for RPI 3B+
+    cross-build-shell        Open a shell on a container for cross build
+    release                  Build, run all tests and all static analysis tools
+    smoke-test               Run a measurement on a RPI 3B+
   ```
 
 ### Cross compile for RPI 3B+ 
@@ -65,6 +68,5 @@ Github actions it's quite difficult to use with docker (see [this](https://githu
 - tests with mocks: add coverage, run with valgrind or similar
 - code analysis: at least style, linter, asan, tsan, see https://github.com/analysis-tools-dev/static-analysis#cpp
   - https://github.com/google/sanitizers
-    - https://clang.llvm.org/docs/ThreadSanitizer.html
-  - http://cppcheck.sourceforge.net/
+    - https://clang.llvm.org/docs/ThreadSanitizer.htmls
   - https://clang.llvm.org/extra/clang-tidy/
