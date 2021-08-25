@@ -58,7 +58,12 @@ def cross_build_shell(c, cmd=''):
 
 @task
 def ci_build(c):
-    """Run the CI build locally in a Docker container"""
+    """Run the CI build locally in a Docker container
+    
+    NOTE: For CI to work we need to publish the image with
+    with `inv ci-build-image-publish` after logging with
+    `docker login`
+    """
     with print_title("Running CI build locally"):
         # Disable 'build/header_guard' on CI as it uses a different root path in the container
         ci_build_shell(c, cmd='inv release --extra-linter-options --filter=-build/header_guard')

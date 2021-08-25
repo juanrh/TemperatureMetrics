@@ -8,7 +8,7 @@
   --- |    --- |
 |py agent|[![Python metrics agent](https://github.com/juanrh/TemperatureMetrics/actions/workflows/temp-metrics-d-py-ci.yml/badge.svg)](https://github.com/juanrh/TemperatureMetrics/actions/workflows/temp-metrics-d-py-ci.yml)|
 |React online UI |[![React online UI](https://github.com/juanrh/TemperatureMetrics/actions/workflows/online-temp-metrics-react-ui.yml/badge.svg)](https://github.com/juanrh/TemperatureMetrics/actions/workflows/online-temp-metrics-react-ui.yml)|
-|Online agent |[![Online agent](https://github.com/juanrh/TemperatureMetrics/actions/workflows/online-temp-metrics-agent.yml/badge.svg)](https://github.com/juanrh/TemperatureMetrics/actions/workflows/online-temp-metrics-agent.yml)|
+|Online agent |[![Online agent](https://app.travis-ci.com/juanrh/TemperatureMetrics.svg?branch=master)](https://app.travis-ci.com/github/juanrh/TemperatureMetrics/)|
 
 ## Design
 

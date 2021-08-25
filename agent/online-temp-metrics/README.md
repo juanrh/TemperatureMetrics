@@ -53,11 +53,18 @@ Build with the Invoke task `cross-build` seen above. The binary is available at 
 
 See also [Deployment challenges](https://docs.conan.io/en/latest/devtools/running_packages.html#deployment-challenges) for how to deal with issues with different versions of the C or C++ standard library.
 
-TODO
-- CI setup
-- Better error handling: use return code constatns, also do in wrapping C++ code
+### CI setup
+
+Github actions it's quite difficult to use with docker (see [this](https://github.community/t/docker-action-cant-create-folder-in-runners-home-directory/17816/5), [this](https://stackoverflow.com/questions/57830375/github-actions-workflow-error-permission-denied), and [this](https://github.com/dockcross/dockcross/issues/231)). TravisCI it's trivial to setup with Docker, and Docker in Docker works easily to trigger cross compilation container from the main container
+
+### TODO
+
 - Wrap in testeable class
 - gRPC service: consider spsc Boost queue to communicate sensor and service
 - connet with front
-- tests with mocks
-- code analysis: at least style, linter, asan, tsan
+- tests with mocks: add coverage, run with valgrind or similar
+- code analysis: at least style, linter, asan, tsan, see https://github.com/analysis-tools-dev/static-analysis#cpp
+  - https://github.com/google/sanitizers
+    - https://clang.llvm.org/docs/ThreadSanitizer.html
+  - http://cppcheck.sourceforge.net/
+  - https://clang.llvm.org/extra/clang-tidy/
