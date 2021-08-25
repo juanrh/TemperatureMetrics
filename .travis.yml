@@ -1,0 +1,10 @@
+language: minimal
+
+services:
+  - docker
+
+before_install:
+- docker pull juanrh/online-temp-metrics-ci:latest
+
+script: 
+- docker run -it -e ONLINE_TEMP_METRICS_SRC_DIR="$(pwd)/agent/online-temp-metrics" -v $(pwd)/agent/online-temp-metrics:/home/conan/project -v /var/run/docker.sock:/var/run/docker.sock --rm juanrh/online-temp-metrics-ci:latest /bin/bash -c inv release --extra-linter-options --filter=-build/header_guard
