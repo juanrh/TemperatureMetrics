@@ -1,2 +1,3 @@
 build
 cross_build
+scan_build_dir

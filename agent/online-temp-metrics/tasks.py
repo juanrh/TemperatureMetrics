@@ -119,9 +119,17 @@ def analyze(c, extra_linter_options=''):
     --linelength=105 \
     --counting=detailed {extra_linter_options} \
     $(find src include -name *.h -or -name *.c -or -name *.cpp)""")
-    with print_title("Runnin Cppcheck static code analyzer"):
+    with print_title("Running Cppcheck static code analyzer"):
         # http://cppcheck.sourceforge.net/
         c.run('cppcheck --check-config --enable=all --error-exitcode=1  --suppress=missingIncludeSystem -I include/ src/')
+    with print_title("Running scan-build static code analyzer"):
+        # https://clang-analyzer.llvm.org/scan-build.html
+        scan_build_dir = 'scan_build_dir'
+        c.run(f"rm -rf {scan_build_dir}")
+        c.run(f"mkdir -p {scan_build_dir}")
+        with c.cd(scan_build_dir):
+            c.run('cmake ..')
+            c.run('scan-build -o report -k make')
 
 @task
 def release(c, extra_linter_options=''):

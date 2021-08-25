@@ -11,4 +11,5 @@ RUN sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/
 RUN sudo apt-get update
 RUN sudo apt-get install -y docker-ce
 RUN sudo apt-get install -y cppcheck
+RUN sudo apt-get install -y clang
 WORKDIR /home/conan/project
