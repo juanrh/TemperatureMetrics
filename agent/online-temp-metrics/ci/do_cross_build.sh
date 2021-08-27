@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+set -e
+
 PACKAGE_NAME='online_temp_metrics'
 PACKAGE_VERSION='0.1'
 PACKAGE_ORG='juanrh'
