@@ -72,7 +72,7 @@ Things that didn't work out well:
   - other options are too complex:
     - crosstool-NG: no specific advantage compared to using the official toolchain
     - custom distro / image with yocto or buildroot: much complex than Fedora IoT or Ubuntu Core, probably lead to smaller and more optimized images, but that makes sense for longer projects and more constrained HW setups
-  - use other languages: Python is really easy, but more high performance languages like Go or Rust migth be work exploring. Cross compiling Rust to work in AWS Lambda it's quite easy, [cross compilation in Go](https://golangcookbook.com/chapters/running/cross-compiling/) also looks easy, Go statically links the runtime to each binary which could eliminate libc version issues.
+  - use other languages: Python is really easy, but more high performance languages like Go or Rust migth be work exploring. Cross compiling Rust to work in AWS Lambda it's quite easy, [cross compilation in Go](https://golangcookbook.com/chapters/running/cross-compiling/) also looks easy, Go statically links the runtime to each binary which could eliminate libc version issues. Also, this languages have built-in package managers, so maybe they have ARM packages available. That allows using basic stuff like gRPC or high level http server frameworks, to build more sophisticated interactions between agents and server side code
 
 
 _Next steps for future projects_: the most promising option seems
