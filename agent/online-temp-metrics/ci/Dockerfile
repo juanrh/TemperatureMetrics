@@ -1,4 +1,5 @@
-FROM conanio/gcc7
+# https://github.com/conan-io/conan-docker-tools
+FROM conanio/gcc10-armv7hf
 COPY requirements.txt /tmp/requirements.txt
 RUN pip3 install --upgrade pip
 RUN pip3 install -r /tmp/requirements.txt

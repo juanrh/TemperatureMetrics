@@ -53,7 +53,7 @@ def cross_build_shell(c, cmd=''):
     """Open a shell on a container for cross build"""
     c.run(f"mkdir -p {_cross_build_dir}")
     # `pty=True` for https://www.pyinvoke.org/faq.html#why-do-i-sometimes-see-err-stdin-is-not-a-tty
-    c.run(f"docker run -it -v{_source_code_dir}:/home/conan/project --rm conanio/gcc7-armv7 /bin/bash {bash_args(cmd)}",
+    c.run(f"docker run -it -v{_source_code_dir}:/home/conan/project --rm conanio/gcc10-armv7hf /bin/bash {bash_args(cmd)}",
           pty=True)
 
 @task
@@ -64,6 +64,7 @@ def ci_build(c):
     with `inv ci-build-image-publish` after logging with
     `docker login`
     """
+    c.run(f"rm -rf {_build_dir}")
     with print_title("Running CI build locally"):
         # Disable 'build/header_guard' on CI as it uses a different root path in the container
         ci_build_shell(c, cmd='inv release --extra-linter-options --filter=-build/header_guard')
