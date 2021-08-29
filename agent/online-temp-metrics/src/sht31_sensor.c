@@ -73,14 +73,17 @@ static const char SEND_MEASURE_CMD_CONFIG[SEND_MEASURE_CMD_SIZE] = {
 static const unsigned int MEASUREMENT_SLEEP_TIME_SECS = 1;
 
 int sht31_open(const char* bus, struct sht31_sensor* sensor) {
+    // mark as wrong file until we set a correct file
+    sensor->file = -1;
     // Create I2C bus
     int file;
 
     if ((file = open(bus, O_RDWR)) < 0) {
         return SHT31_STATUS_OPEN_BUS_FAILURE;
     }
-    ioctl(file, I2C_SLAVE, SENSOR_ADDRESS);
-
+    if (ioctl(file, I2C_SLAVE, SENSOR_ADDRESS) < 0) {
+        return SHT31_STATUS_OPEN_BUS_FAILURE;
+    }
     sensor->file = file;
 
     return SHT31_STATUS_OK;
@@ -113,8 +116,11 @@ int sht31_measure(const struct sht31_sensor* sensor,
 }
 
 int sht31_close(const struct sht31_sensor* sensor) {
-    int close_status = close(sensor->file);
-    if (close_status != 0) {
+    if (sensor->file < 0) {
+        // not actually open, nothing to do here
+        return SHT31_STATUS_OK;
+    }
+    if (close(sensor->file) != 0) {
         return SHT31_STATUS_CLOSE_BUS_FAILURE;
     }
     return SHT31_STATUS_OK;

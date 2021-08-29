@@ -18,10 +18,10 @@ include_directories("include")
 # to make files, with either `cmake ..` or in VsCode with the task
 # "CMake: Configure"
 file(GLOB all_SRC
-     "src/*.cpp"
+     "src/*.cpp" "src/*.c"
 )
 
-add_executable(main ${all_SRC} "src/sht31_sensor.c")
+add_executable(main ${all_SRC})
 
 # To enable threads
 # https://stackoverflow.com/questions/5395309/how-do-i-force-cmake-to-include-pthread-option-during-compilation
