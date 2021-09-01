@@ -20,6 +20,6 @@ setup(name='tempd',
         'pip', 'wheel', 'setuptools', 'pytest', 'pytest-cov',
         'mypy>=0.910', 'typing_extensions>=3.10.0.0', 'pylint>=2.8.3',
         'invoke>=1.5.0', 'fabric>=2.6.0',
-        'Flask>=2.0.1'
+        'Flask>=2.0.1', 'Flask-SocketIO>=5.1.1', 'simple-websocket>=0.3.0'
       ],
       zip_safe=False)

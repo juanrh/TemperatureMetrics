@@ -4,7 +4,7 @@
 
 ### Setup
 
-Create a development environmetn and install the dependencies.
+Create a development environment and install the dependencies.
 
 ```bash
 # Install pyenv prerequisites: https://github.com/pyenv/pyenv/wiki/Common-build-problems#prerequisites
@@ -49,5 +49,11 @@ The frontend should be served by the front, the instructions in [frontend's READ
 $ inv -l
 Available tasks:
 
-  run   Launch web app to default port at http://127.0.0.1:5000/index.html
+  build     Build the app
+  release   Run all tests and all code analysis tools
+  run       Launch web app to default port at http://127.0.0.1:5000/index.html
 ```
+
+### Out of scope
+
+- No auth. This is a PoC that assumes only as only websocket client as single instance of the front end app that is served by this Flask app.

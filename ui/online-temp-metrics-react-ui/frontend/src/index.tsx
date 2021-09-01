@@ -3,12 +3,12 @@ import ReactDOM from 'react-dom';
 import './index.css';
 import App from './App';
 import reportWebVitals from './reportWebVitals';
-import { FakeMetricsSource } from './MetricSources';
+import { WebsocketMetricsSource } from './MetricSources';
 
 ReactDOM.render(
   <React.StrictMode>
     <App 
-      metricsSource={new FakeMetricsSource()}
+      metricsSource={new WebsocketMetricsSource()}
       plotWindowSize={30}
       dataBufferSize={100}
     />

@@ -9,13 +9,38 @@ for deployment
 
 import os
 import sys
+import logging
+import logging.handlers
+
 from invoke import task
+
+from metricsapp import app
 
 _script_dir = os.path.dirname(__file__)
 _repo_root_dir = os.path.join(_script_dir, '..',  '..',  '..')
 sys.path.append(_repo_root_dir)
-from utils.invoke import print_title # pylint: disable=wrong-import-position
+from utils.invoke import print_title # pylint: disable=wrong-import-position,wrong-import-order
 _app_package_name = 'metricsapp'
+
+def setup_logging():
+    """Setup logging"""
+    logger = logging.getLogger()
+    logger.setLevel('DEBUG')
+    formatter = \
+        logging.Formatter('%(asctime)s [%(levelname)s] - [%(process)d] - %(name)s: %(message)s')
+    def setup_handler(handler):
+        handler.setFormatter(formatter)
+        handler.setLevel('DEBUG')
+        logger.addHandler(handler)
+    stdoutHandler = logging.StreamHandler()
+    setup_handler(stdoutHandler)
+
+@task
+def build(c):
+    """Build the app
+    - Update the statics folder to the latest version of the frontend"""
+    with c.cd(os.path.join(_script_dir, '..', 'frontend')):
+        c.run('npm run build')
 
 @task
 def run(c):
@@ -25,9 +50,9 @@ def run(c):
 
     No need to `export FLASK_APP=` as the main script is named `app.py`
     """
-    print('Open app at http://127.0.0.1:5000/index.html')
+    setup_logging()
     with c.cd(os.path.join(_script_dir, _app_package_name)):
-        c.run('flask run')
+        app.main()
 
 @task
 def release(c):
