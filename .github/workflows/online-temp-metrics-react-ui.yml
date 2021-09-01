@@ -12,7 +12,7 @@ jobs:
     defaults:
       run:
         shell: bash
-        working-directory: ui/online-temp-metrics-react-ui
+        working-directory: ui/online-temp-metrics-react-ui/frontend
 
     steps:
       - uses: actions/checkout@v2
