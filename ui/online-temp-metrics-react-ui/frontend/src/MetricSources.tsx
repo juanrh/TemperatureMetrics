@@ -79,12 +79,28 @@ interface WebsocketMetricsSourceError {
  * metrics to this metric source through the websocket
  */
 export class WebsocketMetricsSource implements MetricsSource {
-  // static readonly ERROR_MESSAGE = 'metricsError';
+  private static readonly STOP_TIMEOUT_MILLIS = 1000;
+  private static readonly START_TIMEOUT_MILLIS = 1000;
+
   private readonly socket: Socket;
   private sink?: MetricsSink;
+  /** We use this for a simple promise-like mechanism, as we don't have ask pattern
+   * or become like in Akka, and we don't have call and we cannot change the receive
+   * like in Erlang, and instead we have a fixed receive defined by the calls 
+   * to `this.socket.on` we do in `setup_message_handling`. The idea is that when we
+   * want to check if we get a response message we set `error` to an error and issue
+   * a timer to fail with `sink.reportError` if error is still defined on timeout. For
+   * this to work other receives set error to undefined on suitable receives. This is
+   * quite limited as it cannot wait for several messages, but it is enough for this
+   * simple protocol, and avoids complex state machine handling.
+   * We have 2 synchronous calls to make to the backend, 'metricsStart' and 'metricsStop',
+   * so we use 2 separate "error" variables to avoid mixing their results, which might
+   * happen if the user starts and then stops very quickly
+   */
+  private startError?: Error;
+  private stopError?: Error;
   constructor() {
     // by default this uses the same URL as the endpoint that served this React app
-    // TODO error handling
     this.socket = io();
     this.setup_message_handling();
   }
@@ -95,44 +111,71 @@ export class WebsocketMetricsSource implements MetricsSource {
     console.log(`Fetching data for hostname=[${hostname}]`);
     this.sink = sink;
     
-    // TODO: error handling. Another message for errors I guess? This can easily lead to 
-    // a state machine waiting for an ack from the server, and Erlang style communication
     this.socket.emit('metricsStart', {hostname: hostname});
+    this.startError = new Error('Server timeout waiting for metric collection to start');
+    const self = this;
+    setTimeout(function(){
+      if (self.startError !== undefined) {
+        self.sink?.reportError(self.startError);
+      }
+    }, WebsocketMetricsSource.START_TIMEOUT_MILLIS);
     console.log(`Sent 'metricsStart' to backend for data ${JSON.stringify({hostname: hostname})}`);
   }
 
   stop() {
     return new Promise((resolve, reject) => {
-      // TODO: error handling
       this.socket.emit('metricsStop');
-      console.log(`Sent 'metricsStop' to backend`);      
+      console.log(`Sent 'metricsStop' to backend`);
+      this.stopError = new Error('Server timeout waiting for metric collection to stop');   
       // Give some time to get an error message from backend
       setTimeout(() => {
         this.sink = undefined;
         console.log(`Closed sink`);
-      }, 1000);       
-      resolve(); // FIXME resolve in the timeout fun, if no errors yet (use state machien for that)
+        if (this.stopError !== undefined) {
+          console.log(`Error stopping metrics`)
+          reject(this.stopError)
+        } else {
+          resolve();
+        }
+      }, WebsocketMetricsSource.STOP_TIMEOUT_MILLIS);       
+       
     }) as Promise<void>;
   }
 
-  private log_message(msgName: string, msgPayload: any) {
+  private log_message(msgName: string, msgPayload: any={}) {
     console.log(`Got '${msgName}' message from backend with payload ${JSON.stringify(msgPayload)}`);
   }
 
+
   /** This function should be called just once, or we'll process messages more than once */
   private setup_message_handling() {
-    const log_message = this.log_message.bind(this);
     const self = this;
+
     this.socket.on('metricsError', function(msgPayload) {
-      log_message('metricsError', msgPayload);
+      self.log_message('metricsError', msgPayload);
+      self.startError = undefined; // to avoid double error reporting
+      self.stopError = undefined; // to avoid double error reporting
       const error = msgPayload as WebsocketMetricsSourceError;
       if (self.sink !== undefined) {
         self.sink.reportError(new Error(`Server error with code=[${error.code}] and message=[${error.message}]`));
       }
     });
 
+    this.socket.on('metricsStartOk', function(){
+      self.log_message('metricsStartOk');
+      self.startError = undefined;
+    });
+
+    this.socket.on('metricsStopOk', function(){
+      self.log_message('metricsStopOk');
+      self.stopError = undefined;
+    });
+
     this.socket.on('metricsMeasurement', function(msgPayload) {
-      log_message('metricsMeasurement', msgPayload);
+      self.log_message('metricsMeasurement', msgPayload);
+      // Not necessary as Websocket messages cannot arrive out of order, so
+      // we shouldn't receive a measurement before 'metricsStartOk'
+      // self.startError = undefined;  
       const measurement = msgPayload as WebsocketMetricsSourceMeasurement;
       if (self.sink !== undefined) {
         self.sink.pushDatum(new Date(measurement.timestamp), measurement.value);

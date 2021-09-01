@@ -4,8 +4,12 @@ Entry point for the web app
 Websockets events:
 
 - metricsStart: client ask the server to start sending measurements, proving a string
-value at field 'hostname'
+value at field 'hostname'.
+- metricsStartOk: returned by the server when the metric collection has started ok.
+Otherwise the server should send a metricsError message
 - metricsStop: client ask the server to stop sending measurements
+- metricsStopOk: returned by the server when the metric collection has stopped ok.
+Otherwise the server should send a metricsError message
 - metricsMeasurement: server sends a measurement to the client, with fields
     - timestamp: int. As epoch time in milliseconds, as returned by
       `math.floor(time.time_ns() / 1000000)`
@@ -49,6 +53,7 @@ def _send_error_to_front(code: int, msg: str):
 def metrics_start(message):
     """Handle event of client asking to start retrieving metrics"""
     logger.info('Got metricsStart message for msg: %s', json.dumps(message))
+    emit('metricsStartOk')
     timestamp = math.floor(time.time_ns() / 1000000)
     for i in range(2):
         emit('metricsMeasurement', {'timestamp': timestamp + i*20, 'value': uniform(20, 30)})
@@ -57,7 +62,7 @@ def metrics_start(message):
 def metrics_stop():
     """Handle event of client asking to stop retrieving metrics"""
     logger.info('Got metricsStop message')
-    _send_error_to_front(10, 'forced error stopping')
+    emit('metricsStopOk')
 
 @socketio.on('connect')
 def connection_event():
@@ -70,6 +75,6 @@ def disconnection_event():
     logger.info('Client disconnected')
 
 def main():
-    """Entry point of this webapp"""
+    """Program entry point to launch the server and wait for connections"""
     logger.info('Starting app at http://127.0.0.1:5000/index.html')
     socketio.run(app)
