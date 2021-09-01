@@ -8,7 +8,7 @@ for deployment
 # pylint: disable=invalid-name
 
 import os
-from contextlib import contextmanager
+import sys
 import glob
 import json
 import logging
@@ -16,29 +16,18 @@ import logging.handlers
 
 from invoke import task
 from envbash import load_envbash
-from fabric import Config, Connection
 from jinja2 import Template
 from tempd.agent import Main
 
 _script_dir = os.path.dirname(__file__)
+_repo_root_dir = os.path.join(_script_dir, '..',  '..')
+sys.path.append(_repo_root_dir)
+from utils.invoke import print_title, connect_with_sudo # pylint: disable=wrong-import-position,wrong-import-order
 
 def read_conf(path):
     """Read a configuration file"""
     with open(path, 'r', encoding='utf8') as in_f:
         return json.load(in_f)
-
-@contextmanager
-def print_title(message):
-    """
-    Print a message with a underline chars, so it is more visible, and
-    then print some empty lines when leaving this context.
-    """
-    print(f"{message}")
-    print('='*30)
-    yield
-    print('-'*40)
-    print()
-
 
 @task
 def test(c):
@@ -59,7 +48,7 @@ def release(c):
         with print_title("Checking types with mypy"):
             c.run(f"mypy --config-file {os.path.join(_script_dir, 'mypy.ini')} tempd")
         with print_title("Running pylint linter"):
-            c.run('pylint tasks.py tempd')
+            c.run(f"""pylint --init-hook="sys.path.append('{_repo_root_dir}')" tasks.py tempd""")
 
 @task
 def package(c):
@@ -74,14 +63,6 @@ def package(c):
     c.run(f"unzip -l {package_path}")
     return package_path
 
-
-def connect_with_sudo(config):
-    """
-    Connects to a remote host with sudo enabled
-    """
-    sudo_pass = config['agent']['sudo_pass']
-    fabric_conf = Config(overrides={'sudo': {'password': sudo_pass}})
-    return Connection(config['agent']['host'], config=fabric_conf)
 
 _service_file_template = Template('''
 [Unit]
