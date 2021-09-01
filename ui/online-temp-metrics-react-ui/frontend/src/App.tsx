@@ -139,20 +139,30 @@ class MetricsControlPanel extends React.Component<MetricsControlPanelProps, Metr
   }
 
   private setMeasuring(startMeasuring: boolean) {
-    const trimmedHostname = this.state.agentHostname.trim();
-    if (startMeasuring) {
-      console.log(`Start measuring for host [${trimmedHostname}]`);
-      this.props.metricsSource.start({hostname: trimmedHostname}, this);
-    } else {
-      console.log(`Stop measuring for host [${trimmedHostname}]`);
-      this.props.metricsSource.stop().catch((error) => {
-        alert(`Error stopping data source: ${error}`)
-      });
-    }
+    const self = this;
+    this.setState(function(state) {
+      // avoid repeatedly running the same stopping code during
+      // button click handling
+      if (state.measuring === startMeasuring) {
+        console.log("nothing to do here"); // FXIME
+        return {measuring: startMeasuring};
+      }
+      const trimmedHostname = state.agentHostname.trim();
+      if (startMeasuring) {
+        console.log(`Start measuring for host [${trimmedHostname}]`);
+        self.props.metricsSource.start({hostname: trimmedHostname}, self);
+      } else {
+        console.log(`Stop measuring for host [${trimmedHostname}]`);
+        self.props.metricsSource.stop().catch((error) => {
+          alert(`Error stopping data source: ${error}`)
+        });
+      }
 
-    this.setState({
-      measuring: startMeasuring
+      return {
+        measuring: startMeasuring
+      };
     });
+
   }
 
   handleTextChange(event: React.ChangeEvent<HTMLInputElement>) {

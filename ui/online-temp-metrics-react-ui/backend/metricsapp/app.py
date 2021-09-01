@@ -10,6 +10,9 @@ value at field 'hostname'
     - timestamp: int. As epoch time in milliseconds, as returned by
       `math.floor(time.time_ns() / 1000000)`
     - value: float. Temperature measurement
+- metricsError: to signal an error, with fields
+    - code: int
+    - message: str
 """
 
 import os
@@ -37,18 +40,24 @@ def serve_frontend_app(path):
         _react_build_dir, path, as_attachment=False
     )
 
+_METRICS_ERROR_MESSAGE = 'metricsError'
+def _send_error_to_front(code: int, msg: str):
+    logger.info('Sending error message to client with code [%d] and message [%s]', code, msg)
+    emit(_METRICS_ERROR_MESSAGE, {'code': code, 'message': msg})
+
 @socketio.on('metricsStart')
 def metrics_start(message):
     """Handle event of client asking to start retrieving metrics"""
     logger.info('Got metricsStart message for msg: %s', json.dumps(message))
     timestamp = math.floor(time.time_ns() / 1000000)
-    for i in range(10):
+    for i in range(2):
         emit('metricsMeasurement', {'timestamp': timestamp + i*20, 'value': uniform(20, 30)})
 
 @socketio.on('metricsStop')
 def metrics_stop():
     """Handle event of client asking to stop retrieving metrics"""
     logger.info('Got metricsStop message')
+    _send_error_to_front(10, 'forced error stopping')
 
 @socketio.on('connect')
 def connection_event():
@@ -58,7 +67,7 @@ def connection_event():
 @socketio.on('disconnect')
 def disconnection_event():
     """Handle event of client disconnecting"""
-    logger.info('Client dicconnected')
+    logger.info('Client disconnected')
 
 def main():
     """Entry point of this webapp"""
