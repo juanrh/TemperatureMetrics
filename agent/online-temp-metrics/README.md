@@ -90,4 +90,6 @@ _Next steps for future projects_: the most promising option seems
   - https://github.com/google/sanitizers
     - https://clang.llvm.org/docs/ThreadSanitizer.htmls
   - https://clang.llvm.org/extra/clang-tidy/
-  - https://runtimeverification.com/predict/: looks simpler to use, and has bested thread sanitizer in [some benchmarks](https://runtimeverification.com/presentations/RV_Company_Overview.pdf)
+  - RV tools
+    - for bugs in secuential code https://runtimeverification.com/match/: just needs to replace `gcc` by a new command `kcc` that is API compatible with `gcc`, when building the binaries for the tests, it runs the code paths exercised by the tests, but with runtime instrumentation to detect undefined behaviours
+    - for concurrency issues https://runtimeverification.com/predict/: looks simpler to use and has bested thread sanitizer in [some benchmarks](https://runtimeverification.com/presentations/RV_Company_Overview.pdf)
