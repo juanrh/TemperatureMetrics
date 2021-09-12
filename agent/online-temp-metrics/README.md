@@ -90,3 +90,4 @@ _Next steps for future projects_: the most promising option seems
   - https://github.com/google/sanitizers
     - https://clang.llvm.org/docs/ThreadSanitizer.htmls
   - https://clang.llvm.org/extra/clang-tidy/
+  - https://runtimeverification.com/predict/: looks simpler to use, and has bested thread sanitizer in [some benchmarks](https://runtimeverification.com/presentations/RV_Company_Overview.pdf)
