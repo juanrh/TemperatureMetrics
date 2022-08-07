@@ -8,7 +8,10 @@ set(CMAKE_CXX_STANDARD 17)
 
 # To enable threads
 # https://cmake.org/pipermail/cmake/2016-February/062729.html
-# find_package (Threads)
+find_package (Threads)
+
+# https://cmake.org/cmake/help/git-master/module/FindBoost.html
+find_package(Boost REQUIRED COMPONENTS iostreams)
 
 # declare the _header files_ are in `include` directory of the project
 include_directories("include")
@@ -25,7 +28,7 @@ add_executable(main ${all_SRC})
 
 # To enable threads
 # https://stackoverflow.com/questions/5395309/how-do-i-force-cmake-to-include-pthread-option-during-compilation
-# target_link_libraries( main ${CMAKE_THREAD_LIBS_INIT} )
+target_link_libraries(main ${CMAKE_THREAD_LIBS_INIT} Boost::iostreams)
 
 # To use libi2c. Install with conan following https://docs.conan.io/en/1.36/reference/conanfile/methods.html#system-requirements
 # https://stackoverflow.com/questions/63890499/how-to-link-dynamic-library-li2c-with-cmake-undefined-reference-to-i2c-smb

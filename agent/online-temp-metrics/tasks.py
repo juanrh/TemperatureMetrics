@@ -17,6 +17,9 @@ _ci_dir = os.path.join(_script_dir, 'ci')
 _source_code_env_var = 'ONLINE_TEMP_METRICS_SRC_DIR'
 _source_code_dir = os.environ.get(_source_code_env_var, _script_dir)
 
+_ci_build_image_name = 'online-temp-metrics-ci'
+_ci_build_image_fullname = f"juanrh/{_ci_build_image_name}:latest"
+
 @contextmanager
 def print_title(message):
     """
@@ -43,7 +46,8 @@ def build(c):
 def cross_build(c):
     """Build the code for RPI 3B+"""
     with print_title("Building code for RPI 3B+"):
-        cross_build_shell(c, cmd='project/ci/do_cross_build.sh')
+        # FIXME cross_build_shell(c, cmd='project/ci/do_cross_build.sh')
+        cross_build_shell(c, cmd='cd .. && project/ci/do_cross_build.sh')
 
 def bash_args(cmd):
     return '' if len(cmd) == 0 else f"-c '{cmd}'"
@@ -53,12 +57,17 @@ def cross_build_shell(c, cmd=''):
     """Open a shell on a container for cross build"""
     c.run(f"mkdir -p {_cross_build_dir}")
     # `pty=True` for https://www.pyinvoke.org/faq.html#why-do-i-sometimes-see-err-stdin-is-not-a-tty
-    c.run(f"docker run -it -v{_source_code_dir}:/home/conan/project --rm conanio/gcc10-armv7hf /bin/bash {bash_args(cmd)}",
+    c.run(f"docker run -it -v{_source_code_dir}:/home/conan/project --rm {_ci_build_image_fullname} /bin/bash {bash_args(cmd)}",
           pty=True)
 
 @task
 def ci_build(c):
     """Run the CI build locally in a Docker container
+
+    FIXME: this is currently cross building twice, we
+    should use an image based on conanio/gcc10 and only
+    the arm image for cross compilation. That would ensure
+    we can run tests locally
     
     NOTE: For CI to work we need to publish the image with
     with `inv ci-build-image-publish` after logging with
@@ -69,7 +78,6 @@ def ci_build(c):
         # Disable 'build/header_guard' on CI as it uses a different root path in the container
         ci_build_shell(c, cmd='inv release --extra-linter-options --filter=-build/header_guard')
 
-_ci_build_image_name = 'online-temp-metrics-ci'
 @task
 def ci_build_shell(c, cmd=''):
     """Open a shell in a container for CI builds"""
@@ -105,8 +113,7 @@ def smoke_test(c, host):
     print('Copying artifacts')
     rc.put(_cross_binary, '/home/pi')
     print('Running smoke test')
-    rc.run(f'/home/pi/{os.path.basename(_cross_binary)}')
-
+    rc.run(f'/home/pi/{os.path.basename(_cross_binary)} $(hostname -I)')
 
 @task
 def analyze(c, extra_linter_options=''):

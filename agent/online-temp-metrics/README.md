@@ -81,7 +81,7 @@ _Next steps for future projects_: the most promising option seems
 - For compilating to target host: use a Docker container for ARM emulated with Qemu instead of cross compilation
 - For dependencies: don't count on Conan, and instead build them into the build container, and consider even deploying the container. But also investigate Fedora Iot or Ubuntu Core, to see what is their recommended development workflow, that likely covers dependencies and cross compilation too, see e.g. [this](https://docs.fedoraproject.org/en-US/iot/build-docker/) 
 
-### TODO
+## TODO
 
 - connect with front
 - tests with mocks: add coverage, run with valgrind or similar

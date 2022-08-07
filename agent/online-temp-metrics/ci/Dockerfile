@@ -13,4 +13,6 @@ RUN apt-cache policy docker-ce
 RUN sudo apt-get install -y docker-ce
 RUN sudo apt-get install -y cppcheck
 RUN sudo apt-get install -y clang-tools
+# https://stackoverflow.com/questions/12578499/how-to-install-boost-on-ubuntu
+RUN sudo apt-get install -y libboost-all-dev
 WORKDIR /home/conan/project

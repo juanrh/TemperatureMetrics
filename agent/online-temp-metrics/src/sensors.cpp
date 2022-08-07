@@ -14,7 +14,7 @@ std::ostream& operator<<(std::ostream& os, const Measurement& measurement) {
 Sht31Sensor::Sht31Sensor(int busNumber): busNumber(busNumber) {
     std::string i2cDeviceName = this->getDeviceName();
     // FIXME: logging instead
-    std::cout << "Using i2c device=[" << i2cDeviceName << "]\n";
+    std::cout << "Opening i2c device=[" << i2cDeviceName << "]\n";
     sht31_open(i2cDeviceName.c_str(), & this->sensorState);
 }
 
