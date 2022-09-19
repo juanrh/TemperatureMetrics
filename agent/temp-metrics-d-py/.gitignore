@@ -11,3 +11,4 @@ conf/despacho.json
 log
 htmlcov/
 .coverage
+.local
