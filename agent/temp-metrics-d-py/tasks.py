@@ -260,6 +260,4 @@ def launch_agent(c, conf): # pylint: disable=unused-argument
     load_envbash(aws_credentials_file)
 
     setup_logging(c, config, agent_root)
-    main = Main(config)
-    deamon = main.create_deamon()
-    deamon.start(blocking=True)
+    Main(config).run()

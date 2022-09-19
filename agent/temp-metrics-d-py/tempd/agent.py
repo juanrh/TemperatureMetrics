@@ -253,6 +253,11 @@ class Main: # pylint: disable=too-few-public-methods
         session_mock.client.return_value = cloudwatch_mock
         return session_mock
 
+    def run(self):
+        """Application entry point"""
+        deamon = self.create_deamon()
+        deamon.start(blocking=True)
+
     def create_temp_meter(self) -> TempMeter:
         """Factory for the TempMeter"""
         temp_meter_config = TempMeterConfig()
