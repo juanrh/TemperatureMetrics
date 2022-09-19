@@ -142,6 +142,7 @@ def deploy(c, conf):
 
     def update_agent():
         with rc.prefix(f". {_activate_virtualenv}"):
+            rc.run('pip install --upgrade pip')
             rc.run(f"pip install {os.path.basename(package_path)}")
 
     def setup_systemd():
