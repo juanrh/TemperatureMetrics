@@ -34,7 +34,6 @@ class MeasurementRecorder(Protocol): # pylint: disable=too-few-public-methods
     permanent storage"""
     def record(self, measurement: TempMeasurement):
         """Records a measurement in some permanent storage"""
-        ...
 
 class Timer(Protocol):
     """A timer.
@@ -43,11 +42,9 @@ class Timer(Protocol):
     might be using the time module"""
     def sleep(self, sleep_time:float):
         """Block this thread for a number of milliseconds"""
-        ...
 
     def time(self) -> float:
         """Give the current epoch time in milliseconds"""
-        ...
 
 class TimeTimer(Timer):
     """Timer based on time module"""

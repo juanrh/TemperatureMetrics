@@ -9,4 +9,3 @@ class TempSensor(Protocol): # pylint: disable=too-few-public-methods
     """A sensor able to read temperature and humidty"""
     def measure(self) -> TempMeasurement:
         """Get a new measurement from the sensor"""
-        ...
