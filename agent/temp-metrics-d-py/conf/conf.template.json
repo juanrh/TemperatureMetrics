@@ -22,5 +22,8 @@
     },
     "aws": {
         "credentials_filename": "aws_credentials.template.sh"
+    },
+    "metrics": {
+        "port": 8000 // Prometheus metrics port, optional and using this as default
     }
 }

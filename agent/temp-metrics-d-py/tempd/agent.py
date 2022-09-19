@@ -13,6 +13,7 @@ from dataclasses import dataclass, replace
 from typing import Callable, Optional
 from typing_extensions import Protocol
 import boto3
+from prometheus_client import start_http_server
 
 from .sensors.types import TempSensor
 from .sensors import dht11, sht31
@@ -252,6 +253,7 @@ class Main: # pylint: disable=too-few-public-methods
 
     def run(self):
         """Application entry point"""
+        self.__start_metrics_server()
         deamon = self.create_deamon()
         deamon.start(blocking=True)
 
@@ -288,3 +290,7 @@ class Main: # pylint: disable=too-few-public-methods
             action
         )
         return deamon
+
+    def __start_metrics_server(self):
+        metrics_conf = self.__config.get("metrics", {'port': '8000'})
+        start_http_server(int(metrics_conf['port']))

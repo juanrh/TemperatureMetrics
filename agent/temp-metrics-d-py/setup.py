@@ -21,6 +21,7 @@ setup(name='tempd',
         'mypy>=0.910', 'typing_extensions>=3.10.0.0', 'pylint>=2.8.3',
         'invoke>=1.5.0', 'fabric>=2.6.0', 
         'Jinja2>=3.0.1', 'boto3>=1.17.102', 'envbash>=1.2.0',
-        'smbus>=1.1.post2', 'retrying>=1.3.3'
+        'smbus>=1.1.post2', 'retrying>=1.3.3',
+        'prometheus-client>=0.14.1 '
       ],
       zip_safe=False)
