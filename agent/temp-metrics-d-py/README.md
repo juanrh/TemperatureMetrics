@@ -56,6 +56,8 @@ inv release
 
 # Run locally with fake cloudwatch metrics client
 inv launch-agent --conf=.local/dev.json
+# Check Prometheus metrics
+curl localhost:8000/metrics | grep tempd
 
 # deploy to prod
 inv deploy --conf=.local/comedor.json

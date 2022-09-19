@@ -10,10 +10,11 @@ import os
 import json
 import threading
 from dataclasses import dataclass, replace
+from collections.abc import Iterable
 from typing import Callable, Optional
 from typing_extensions import Protocol
 import boto3
-from prometheus_client import start_http_server
+from prometheus_client import Gauge, start_http_server
 
 from .sensors.types import TempSensor
 from .sensors import dht11, sht31
@@ -159,6 +160,27 @@ class TempMeter: # pylint: disable=too-few-public-methods
         self.__class__.logger.info('Measured %s', measurement)
         return measurement
 
+class PrometheusMeasurementRecorder(MeasurementRecorder): # pylint: disable=too-few-public-methods
+    """A MeasurementRecorder that exposes the measurements as Prometheus metrics, thus
+    turning this process into a Prometheus target.
+    """
+    _label_names = ['source']
+    temperature: Gauge = Gauge("tempd_temperature", "room temperature in Celsius",
+        labelnames=_label_names)
+    humidity: Gauge = Gauge("tempd_humidity", "room humidity percentage",
+        labelnames=_label_names)
+    logger = logging.getLogger('PrometheusMeasurementRecorder')
+
+    def record(self, measurement: TempMeasurement):
+        # Ignoring timestamp as that is the prometheus way
+        temperature, humidity = measurement.temperature, measurement.humidity
+        source = measurement.source
+        self.__class__.temperature.labels(source).set(temperature)
+        self.__class__.humidity.labels(source).set(humidity)
+        self.__class__.logger.info('Measurement recorded in Prometheus client %s',
+            f"{{Temperature: {temperature}, Humidity: {humidity}, Source: {source}}}")
+
+
 class CloudwatchMeasurementRecorder(MeasurementRecorder): # pylint: disable=too-few-public-methods
     """A MeasurementRecorder that stores the measurements
     as AWS Cloudwatch metrics. 2 metrics are emitted per
@@ -279,11 +301,13 @@ class Main: # pylint: disable=too-few-public-methods
         measurement_conf = self.__config['measurement']
         meter: TempMeter = self.create_temp_meter()
         boto_session = Main.__create_boto_session()
-        measurement_recorder: MeasurementRecorder = \
-            CloudwatchMeasurementRecorder(boto_session)
-
+        measurement_recorders: Iterable[MeasurementRecorder] = [ # pylint: disable=unsubscriptable-object
+            CloudwatchMeasurementRecorder(boto_session),
+            PrometheusMeasurementRecorder()
+        ]
         def action():
-            measurement_recorder.record(meter.measure())
+            for recorder in measurement_recorders:
+                recorder.record(meter.measure())
 
         deamon = ThreadDaemon(
             float(measurement_conf['frequency_in_seconds']),
