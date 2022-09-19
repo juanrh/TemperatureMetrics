@@ -55,11 +55,11 @@ See VsCode tasks in `.vscode/tasks.json`, and invoke tasks with `inv -l`:
 inv release
 
 # Run locally with fake cloudwatch metrics client
-inv launch-agent --conf=conf/dev.json
+inv launch-agent --conf=.local/dev.json
 
 # deploy to prod
-inv deploy --conf=conf/prod.json
+inv deploy --conf=.local/comedor.json
 
 # check agent status in prod
-inv check-agent-status --conf=conf/prod.json
+inv check-agent-status --conf=.local/comedor.json
 ```
