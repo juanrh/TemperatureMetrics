@@ -306,8 +306,9 @@ class Main: # pylint: disable=too-few-public-methods
             PrometheusMeasurementRecorder()
         ]
         def action():
+            measurement = meter.measure()
             for recorder in measurement_recorders:
-                recorder.record(meter.measure())
+                recorder.record(measurement)
 
         deamon = ThreadDaemon(
             float(measurement_conf['frequency_in_seconds']),
