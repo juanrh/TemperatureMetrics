@@ -17,6 +17,7 @@ echo 'eval "$(pyenv virtualenv-init -)"' >> ~/.bashrc
 pyenv update
 
 # Using same python version as the RPI 3B+
+## For Ubuntu 22.04 use `CC=gcc-10 pyenv install 3.7.3` https://stackoverflow.com/questions/73239153/pyenv-giving-errors-after-trying-to-install-python-3-6-9
 pyenv install 3.7.3
 pyenv shell 3.7.3
 
