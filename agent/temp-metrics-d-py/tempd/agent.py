@@ -243,6 +243,9 @@ class CloudwatchMeasurementRecorder(MeasurementRecorder): # pylint: disable=too-
         self.__class__.logger.info('Measurement recorded in cloudwatch %s',
             json.dumps(put_metric_data_params))
 
+class ConfigError(Exception):
+    """Configuration error: some required configuration value is missing at runtime"""
+
 
 class Main: # pylint: disable=too-few-public-methods
     """Analogous to a Guice module, this just builds
@@ -293,7 +296,7 @@ class Main: # pylint: disable=too-few-public-methods
             logging.warning('Unknown value for configuration measurement.sensor_type:  %s',
                 sensor_type)
             msg = f"Unknown value for configuration measurement.sensor_type: '{sensor_type}'"
-            raise Exception(msg)
+            raise ConfigError(msg)
         return TempMeter(measurement_conf['source_name'], config=temp_meter_config)
 
     def create_deamon(self) -> ThreadDaemon:
